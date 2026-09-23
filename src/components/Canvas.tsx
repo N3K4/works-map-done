@@ -9,7 +9,7 @@ interface CanvasProps {
   activeCategory: string;
   zoom: number;
   pan: { x: number; y: number };
-  setZoom: (fn: (z: number) => number) => void;
+  setZoom: (z: number) => void;
   setPan: (p: { x: number; y: number }) => void;
   onAddZone: (zone: Zone) => void;
   selectedZone: string | null;
@@ -33,6 +33,16 @@ export const Canvas: React.FC<CanvasProps> = ({
   const [spacePressed, setSpacePressed] = useState(false);
   const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const mouseDownPosRef = useRef<Point | null>(null);
+  
+  // Refs для хранения актуальных значений zoom и pan
+  const zoomRef = useRef(zoom);
+  const panRef = useRef(pan);
+  
+  // Обновляем refs при изменении state
+  useEffect(() => {
+    zoomRef.current = zoom;
+    panRef.current = pan;
+  }, [zoom, pan]);
 
   const screenToCanvas = useCallback((sx: number, sy: number): Point => {
     const container = containerRef.current;
@@ -165,27 +175,36 @@ export const Canvas: React.FC<CanvasProps> = ({
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      // Координаты мыши относительно viewport, а не контейнера
+      // Координаты мыши относительно viewport
       const viewportRect = viewport.getBoundingClientRect();
       const mouseX = e.clientX - viewportRect.left;
       const mouseY = e.clientY - viewportRect.top;
 
+      // Используем актуальные значения из refs
+      const currentZoom = zoomRef.current;
+      const currentPan = panRef.current;
+
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      setZoom(prevZoom => {
-        const newZoom = Math.max(0.1, Math.min(10, prevZoom * delta));
-        const scale = newZoom / prevZoom;
-        // Пересчитываем pan так, чтобы точка под курсором оставалась на месте
-        const newPanX = mouseX - scale * (mouseX - pan.x);
-        const newPanY = mouseY - scale * (mouseY - pan.y);
-        setPan({ x: newPanX, y: newPanY });
-        return newZoom;
-      });
+      const newZoom = Math.max(0.1, Math.min(10, currentZoom * delta));
+      const scale = newZoom / currentZoom;
+      
+      // Пересчитываем pan так, чтобы точка под курсором оставалась на месте
+      const newPanX = mouseX - scale * (mouseX - currentPan.x);
+      const newPanY = mouseY - scale * (mouseY - currentPan.y);
+      
+      // Обновляем state
+      setZoom(newZoom);
+      setPan({ x: newPanX, y: newPanY });
+      
+      // Обновляем refs сразу
+      zoomRef.current = newZoom;
+      panRef.current = { x: newPanX, y: newPanY };
     };
 
-    // Добавляем listener на viewport, а не на контейнер
+    // Добавляем listener на viewport
     viewport.addEventListener('wheel', handleWheel, { passive: false });
     return () => viewport.removeEventListener('wheel', handleWheel);
-  }, [pan, setZoom, setPan, containerRef]);
+  }, [setZoom, setPan, containerRef]);
 
   useEffect(() => {
     setCurrentPoints([]);

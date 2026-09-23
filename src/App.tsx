@@ -41,12 +41,12 @@ function App() {
   }, []);
 
   const zoomIn = useCallback(() => {
-    setZoom(z => Math.min(MAX_ZOOM, z * 1.2));
-  }, []);
+    setZoom(Math.min(MAX_ZOOM, zoom * 1.2));
+  }, [zoom]);
 
   const zoomOut = useCallback(() => {
-    setZoom(z => Math.max(MIN_ZOOM, z / 1.2));
-  }, []);
+    setZoom(Math.max(MIN_ZOOM, zoom / 1.2));
+  }, [zoom]);
 
   const resetZoom = useCallback(() => {
     if (activeImage) {
