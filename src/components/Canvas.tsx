@@ -19,12 +19,13 @@ interface CanvasProps {
   setCurrentPoints: (p: Point[]) => void;
   onUploadClick: () => void;
   onOpenClick: () => void;
+  images: any[];
 }
 
 export const Canvas: React.FC<CanvasProps> = ({
   image, mode, activeCategory, zoom, pan, setZoom, setPan,
   onAddZone, selectedZone, setSelectedZone, containerRef,
-  currentPoints, setCurrentPoints, onUploadClick, onOpenClick
+  currentPoints, setCurrentPoints, onUploadClick, onOpenClick, images
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mousePos, setMousePos] = useState<Point | null>(null);
@@ -300,117 +301,93 @@ export const Canvas: React.FC<CanvasProps> = ({
     }
   }, [isPanning]);
 
-  // Пустое состояние
-  if (!image) {
-    return (
-      <div className="flex-1 relative overflow-hidden bg-gray-950 no-select">
-        {/* Фоновый паттерн */}
-        <div 
-          className="absolute inset-0 opacity-5 pointer-events-none"
-          style={{ 
-            backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', 
-            backgroundSize: '20px 20px'
-          }}
-        />
-        
-        {/* Пустое состояние */}
-        <div className="relative z-10 flex items-center justify-center h-full">
-          <div className="max-w-md text-center">
-            {/* Зона загрузки */}
-            <div 
-              onClick={onUploadClick}
-              className="border-2 border-dashed border-gray-700 rounded-2xl p-10 cursor-pointer hover:border-blue-500/50 hover:bg-gray-800/30 transition-all group mb-4"
-            >
-              <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🖼️</div>
-              <div className="text-lg font-semibold text-gray-300 mb-2">Загрузите изображение</div>
-              <div className="text-gray-500 text-sm mb-4">Перетащите файл или нажмите для выбора</div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg text-blue-400 text-sm">
-                <span>📁</span>
-                <span>Выбрать файл</span>
-              </div>
-            </div>
-            <div className="text-gray-600 text-xs mt-3">Поддерживаются форматы: PNG, JPG, WEBP</div>
-            
-            {/* Кнопка Открыть проект */}
-            <button 
-              onClick={onOpenClick}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600/20 border border-purple-500/30 rounded-lg text-purple-400 text-sm hover:bg-purple-600/30 transition-all mt-4"
-            >
-              <span>📂</span>
-              <span>Открыть проект</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const cursorStyle = spacePressed || isPanning ? 'cursor-grabbing' : mode === 'draw' ? 'cursor-crosshair' : 'cursor-pointer';
+  const cursorClass = isPanning || spacePressed ? 'cursor-grabbing' : mode === 'draw' ? 'cursor-crosshair' : 'cursor-pointer';
 
   return (
-    <div className="flex-1 relative overflow-hidden bg-gray-950 no-select">
-      {/* Фоновый паттерн */}
-      <div 
-        className="absolute inset-0 opacity-5 pointer-events-none"
-        style={{ 
-          backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', 
-          backgroundSize: '20px 20px'
-        }}
-      />
-
-      <div
-        ref={containerRef as React.RefObject<HTMLDivElement>}
-        className={`absolute inset-0 overflow-hidden ${cursorStyle}`}
-      >
-        <div
-          style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: '0 0',
-            width: image.canvasSize.width,
-            height: image.canvasSize.height,
-          }}
-        >
-          <canvas
-            ref={canvasRef}
-            width={image.canvasSize.width}
-            height={image.canvasSize.height}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onClick={handleClick}
-            onContextMenu={handleContextMenu}
-            onMouseLeave={handleMouseLeave}
-            className="shadow-2xl border border-gray-700"
-            style={{ display: 'block' }}
-          />
+    <main className={cursorClass}>
+      <div className="viewport-bg"></div>
+      
+      {!image && (
+        <div className="upload-area">
+          <div className="upload-content">
+            <div className="upload-box" onClick={onUploadClick}>
+              <div className="upload-icon">🖼️</div>
+              <div className="upload-title">Загрузите изображение</div>
+              <div className="upload-desc">План помещения, чертёж или фото — начните выделять зоны</div>
+              <div className="upload-btn">
+                <span>📁</span>
+                <span>Нажмите для выбора файла</span>
+              </div>
+              <div className="upload-hint">Можно загрузить несколько файлов сразу</div>
+            </div>
+            {images.length > 0 && (
+              <>
+                <div className="or-divider">или</div>
+                <button className="project-btn" onClick={onOpenClick}>
+                  <span>📂</span>
+                  <span>Открыть сохранённый проект</span>
+                </button>
+                <div className="project-hint">Формат .zoneproj</div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Подсказка */}
-      <div className="absolute top-3 right-3 text-[10px] text-gray-600 pointer-events-none">
-        Колесо — зум • Space+ЛКМ — панорама
-      </div>
+      {image && (
+        <>
+          <div
+            ref={containerRef as React.RefObject<HTMLDivElement>}
+            className="canvas-container"
+            style={{
+              left: pan.x,
+              top: pan.y,
+              transform: `scale(${zoom})`
+            }}
+          >
+            <canvas
+              ref={canvasRef}
+              width={image.canvasSize.width}
+              height={image.canvasSize.height}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onClick={handleClick}
+              onContextMenu={handleContextMenu}
+              onMouseLeave={handleMouseLeave}
+            />
+          </div>
 
-      {/* Статус-бар */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-800/95 backdrop-blur-sm rounded-full px-4 py-2 text-xs flex items-center gap-3 shadow-lg ring-1 ring-white/10 pointer-events-none">
-        <span className="text-gray-300 font-medium truncate max-w-[120px]">📄 {image.name}</span>
-        <span className="text-gray-600">•</span>
-        <span 
-          className="w-2.5 h-2.5 rounded-full" 
-          style={{ backgroundColor: CATEGORIES.find(c => c.id === activeCategory)?.color }}
-        />
-        <span className="text-gray-300">{CATEGORIES.find(c => c.id === activeCategory)?.name}</span>
-        <span className="text-gray-600">•</span>
-        <span className="text-gray-400">{mode === 'draw' ? '✏️' : '👆'}</span>
-        <span className="text-gray-600">•</span>
-        {currentPoints.length > 0 ? (
-          <span className="text-yellow-400">{currentPoints.length}т → замкните</span>
-        ) : (
-          <span className="text-gray-400">{image.zones.length} зон</span>
-        )}
-        <span className="text-gray-600">•</span>
-        <span className="text-gray-400">{Math.round(zoom * 100)}%</span>
-      </div>
-    </div>
+          <div className="status-bar">
+            <div className="status-item">
+              <span>📄</span>
+              <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {image.name}
+              </span>
+            </div>
+            <div className="status-divider">•</div>
+            <div 
+              className="status-dot" 
+              style={{ backgroundColor: CATEGORIES.find(c => c.id === activeCategory)?.color }}
+            ></div>
+            <div className="status-item">{CATEGORIES.find(c => c.id === activeCategory)?.name}</div>
+            <div className="status-divider">•</div>
+            <div className="status-item">{mode === 'draw' ? '✏️' : '👆'}</div>
+            {currentPoints.length > 0 && mode === 'draw' && (
+              <>
+                <div className="status-divider">•</div>
+                <div className="status-item status-warning">
+                  {currentPoints.length}т {currentPoints.length >= 3 ? '→ замкните' : ''}
+                </div>
+              </>
+            )}
+            <div className="status-divider">•</div>
+            <div className="status-item">{Math.round(zoom * 100)}%</div>
+          </div>
+
+          <div className="zoom-hint">Колесо — зум • Space+ЛКМ — панорама</div>
+        </>
+      )}
+    </main>
   );
 };

@@ -171,12 +171,15 @@ function App() {
       setImages(loadedImages);
       setActiveImageId(project.activeImageId || loadedImages[0]?.id || null);
       setSelectedZone(null);
+      setCurrentPoints([]);
       setTimeout(() => {
         if (containerRef.current && loadedImages.length > 0) {
           const active = loadedImages.find(i => i.id === project.activeImageId) || loadedImages[0];
-          fitToScreen(active.canvasSize.width, active.canvasSize.height);
+          if (active) {
+            fitToScreen(active.canvasSize.width, active.canvasSize.height);
+          }
         }
-      }, 100);
+      }, 300);
     } catch (err) {
       alert('Ошибка загрузки проекта: ' + (err as Error).message);
     }
@@ -262,7 +265,7 @@ function App() {
   }, [selectedZone, deleteZone, activeImage, fitToScreen]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 text-white overflow-hidden">
+    <div className="app">
       <Header
         fileInputRef={fileInputRef}
         activeImage={activeImage}
@@ -281,7 +284,7 @@ function App() {
         images={images}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="main-content">
         <Sidebar
           images={images}
           activeImageId={activeImageId}
@@ -321,6 +324,7 @@ function App() {
           setCurrentPoints={setCurrentPoints}
           onUploadClick={() => fileInputRef.current?.click()}
           onOpenClick={() => projectInputRef.current?.click()}
+          images={images}
         />
       </div>
 

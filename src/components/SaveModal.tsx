@@ -50,72 +50,150 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" 
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0, 0, 0, 0.7)',
+        backdropFilter: 'blur(8px)'
+      }}
       onClick={onClose}
     >
       <div 
-        className="bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col" 
+        style={{
+          background: '#1f2937',
+          borderRadius: 12,
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          maxWidth: 672,
+          width: '100%',
+          margin: '0 16px',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
         onClick={e => e.stopPropagation()}
       >
         {/* Заголовок */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
-          <span className="text-lg font-bold text-white">📦 Сохранение проекта</span>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl transition-colors">✕</button>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 24px',
+          borderBottom: '1px solid #374151'
+        }}>
+          <span style={{ fontSize: 18, fontWeight: 'bold', color: '#fff' }}>📦 Сохранение проекта</span>
+          <button 
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#9ca3af',
+              fontSize: 20,
+              cursor: 'pointer',
+              padding: 0
+            }}
+          >
+            ✕
+          </button>
         </div>
 
         {/* Контент */}
-        <div className="px-6 py-4 flex-1 overflow-y-auto">
-          <p className="text-sm text-gray-400 mb-4">Размер: {sizeKB} КБ</p>
+        <div style={{ padding: '16px 24px', flex: 1, overflowY: 'auto' }}>
+          <p style={{ fontSize: 14, color: '#9ca3af', marginBottom: 16 }}>Размер: {sizeKB} КБ</p>
 
           {/* 3 кнопки действий */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 12,
+            marginBottom: 16
+          }}>
             <button 
-              onClick={handleDownload} 
-              className="flex flex-col items-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              onClick={handleDownload}
+              className="btn-primary"
+              style={{
+                flexDirection: 'column',
+                padding: '12px 16px',
+                gap: 8
+              }}
             >
-              <span className="text-2xl">💾</span>
-              <span className="text-sm font-medium text-white">Скачать</span>
-              <span className="text-[10px] opacity-80 text-white">.zoneproj файл</span>
+              <span style={{ fontSize: 24 }}>💾</span>
+              <span style={{ fontSize: 14, fontWeight: 500 }}>Скачать</span>
+              <span style={{ fontSize: 10, opacity: 0.8 }}>.zoneproj файл</span>
             </button>
             <button 
-              onClick={handleOpenTab} 
-              className="flex flex-col items-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+              onClick={handleOpenTab}
+              className="btn-indigo"
+              style={{
+                flexDirection: 'column',
+                padding: '12px 16px',
+                gap: 8
+              }}
             >
-              <span className="text-2xl">🔗</span>
-              <span className="text-sm font-medium text-white">Новая вкладка</span>
-              <span className="text-[10px] opacity-80 text-white">Просмотр JSON</span>
+              <span style={{ fontSize: 24 }}>🔗</span>
+              <span style={{ fontSize: 14, fontWeight: 500 }}>Новая вкладка</span>
+              <span style={{ fontSize: 10, opacity: 0.8 }}>Просмотр JSON</span>
             </button>
             <button 
-              onClick={handleCopy} 
-              className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
-                copied ? 'bg-green-600' : 'bg-purple-600 hover:bg-purple-700'
-              }`}
+              onClick={handleCopy}
+              className={copied ? 'btn-success' : 'btn-purple'}
+              style={{
+                flexDirection: 'column',
+                padding: '12px 16px',
+                gap: 8
+              }}
             >
-              <span className="text-2xl">{copied ? '✓' : '📋'}</span>
-              <span className="text-sm font-medium text-white">{copied ? 'Скопировано!' : 'Копировать'}</span>
-              <span className="text-[10px] opacity-80 text-white">{copied ? 'В буфере' : 'Ctrl+V'}</span>
+              <span style={{ fontSize: 24 }}>{copied ? '✓' : '📋'}</span>
+              <span style={{ fontSize: 14, fontWeight: 500 }}>{copied ? 'Скопировано!' : 'Копировать'}</span>
+              <span style={{ fontSize: 10, opacity: 0.8 }}>{copied ? 'В буфере' : 'Ctrl+V'}</span>
             </button>
           </div>
 
           {/* Предпросмотр JSON */}
-          <details className="mb-2">
-            <summary className="cursor-pointer text-sm text-gray-400 hover:text-gray-300 mb-2">
-              <span className="inline-block transition-transform mr-1">▶</span>
+          <details style={{ marginBottom: 8 }}>
+            <summary style={{
+              cursor: 'pointer',
+              fontSize: 14,
+              color: '#9ca3af',
+              marginBottom: 8,
+              userSelect: 'none'
+            }}>
+              <span style={{ display: 'inline-block', transition: 'transform 0.2s', marginRight: 4 }}>▶</span>
               Предпросмотр JSON
             </summary>
             <textarea 
               readOnly 
               value={projectData.length > 5000 ? projectData.slice(0, 5000) + '\n... (обрезано)' : projectData}
-              className="w-full h-48 bg-gray-900 text-gray-300 text-xs font-mono p-3 rounded-lg border border-gray-700 resize-none focus:outline-none focus:border-blue-500"
+              style={{
+                width: '100%',
+                height: 192,
+                background: '#111827',
+                color: '#d1d5db',
+                fontSize: 12,
+                fontFamily: 'monospace',
+                padding: 12,
+                borderRadius: 8,
+                border: '1px solid #374151',
+                resize: 'none',
+                outline: 'none'
+              }}
             />
           </details>
         </div>
 
         {/* Футер */}
-        <div className="px-6 py-4 border-t border-gray-700 flex justify-end">
+        <div style={{
+          padding: '16px 24px',
+          borderTop: '1px solid #374151',
+          display: 'flex',
+          justifyContent: 'flex-end'
+        }}>
           <button 
-            onClick={onClose} 
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+            onClick={onClose}
+            className="btn-secondary"
           >
             Закрыть
           </button>
