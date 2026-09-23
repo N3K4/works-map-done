@@ -29,9 +29,10 @@ function App() {
 
   // Fit to screen
   const fitToScreen = useCallback((imgW: number, imgH: number) => {
-    if (!containerRef.current) return;
-    const cw = containerRef.current.clientWidth;
-    const ch = containerRef.current.clientHeight;
+    const mainElement = document.querySelector('main');
+    if (!mainElement) return;
+    const cw = mainElement.clientWidth;
+    const ch = mainElement.clientHeight;
     const scale = Math.min(cw / imgW, ch / imgH) * 0.9;
     const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, scale));
     const newPanX = (cw - imgW * newZoom) / 2;

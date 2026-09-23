@@ -166,19 +166,16 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Wheel zoom
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    
-    // Получаем viewport (main element)
-    const viewport = container.parentElement;
-    if (!viewport) return;
+    // Находим main элемент
+    const mainElement = document.querySelector('main');
+    if (!mainElement) return;
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      // Координаты мыши относительно viewport
-      const viewportRect = viewport.getBoundingClientRect();
-      const mouseX = e.clientX - viewportRect.left;
-      const mouseY = e.clientY - viewportRect.top;
+      // Координаты мыши относительно main
+      const mainRect = mainElement.getBoundingClientRect();
+      const mouseX = e.clientX - mainRect.left;
+      const mouseY = e.clientY - mainRect.top;
 
       // Используем актуальные значения из refs
       const currentZoom = zoomRef.current;
@@ -201,10 +198,10 @@ export const Canvas: React.FC<CanvasProps> = ({
       panRef.current = { x: newPanX, y: newPanY };
     };
 
-    // Добавляем listener на viewport
-    viewport.addEventListener('wheel', handleWheel, { passive: false });
-    return () => viewport.removeEventListener('wheel', handleWheel);
-  }, [setZoom, setPan, containerRef]);
+    // Добавляем listener на main
+    mainElement.addEventListener('wheel', handleWheel, { passive: false });
+    return () => mainElement.removeEventListener('wheel', handleWheel);
+  }, [setZoom, setPan]);
 
   useEffect(() => {
     setCurrentPoints([]);
