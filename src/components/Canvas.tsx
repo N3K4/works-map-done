@@ -17,12 +17,14 @@ interface CanvasProps {
   containerRef: React.RefObject<HTMLDivElement>;
   currentPoints: Point[];
   setCurrentPoints: (p: Point[]) => void;
+  onUploadClick: () => void;
+  onOpenClick: () => void;
 }
 
 export const Canvas: React.FC<CanvasProps> = ({
   image, mode, activeCategory, zoom, pan, setZoom, setPan,
   onAddZone, selectedZone, setSelectedZone, containerRef,
-  currentPoints, setCurrentPoints
+  currentPoints, setCurrentPoints, onUploadClick, onOpenClick
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mousePos, setMousePos] = useState<Point | null>(null);
@@ -31,7 +33,6 @@ export const Canvas: React.FC<CanvasProps> = ({
   const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const mouseDownPosRef = useRef<Point | null>(null);
 
-  // Screen to canvas coordinates
   const screenToCanvas = useCallback((sx: number, sy: number): Point => {
     const container = containerRef.current;
     if (!container) return { x: 0, y: 0 };
@@ -82,7 +83,6 @@ export const Canvas: React.FC<CanvasProps> = ({
       ctx.lineWidth = lineWidth / zoom;
       ctx.stroke();
 
-      // Label
       if (zone.points.length > 0) {
         const cx = zone.points.reduce((s, p) => s + p.x, 0) / zone.points.length;
         const cy = zone.points.reduce((s, p) => s + p.y, 0) / zone.points.length;
@@ -110,7 +110,6 @@ export const Canvas: React.FC<CanvasProps> = ({
 
       if (mousePos) {
         ctx.lineTo(mousePos.x, mousePos.y);
-        // Close hint line
         if (currentPoints.length >= 3) {
           ctx.moveTo(mousePos.x, mousePos.y);
           ctx.lineTo(currentPoints[0].x, currentPoints[0].y);
@@ -123,7 +122,6 @@ export const Canvas: React.FC<CanvasProps> = ({
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Draw points
       currentPoints.forEach((p, i) => {
         const isFirst = i === 0;
         const radius = isFirst ? 8 / zoom : 5 / zoom;
@@ -137,7 +135,6 @@ export const Canvas: React.FC<CanvasProps> = ({
         ctx.stroke();
       });
 
-      // First point highlight when can close
       if (currentPoints.length >= 3 && mousePos) {
         const dist = distance(mousePos, currentPoints[0]);
         if (dist < CLOSE_RADIUS / zoom) {
@@ -177,12 +174,10 @@ export const Canvas: React.FC<CanvasProps> = ({
     return () => container.removeEventListener('wheel', handleWheel);
   }, [pan, setZoom, setPan, containerRef]);
 
-  // Reset drawing on mode/image change
   useEffect(() => {
     setCurrentPoints([]);
   }, [mode, image?.id]);
 
-  // Keyboard
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
@@ -305,52 +300,67 @@ export const Canvas: React.FC<CanvasProps> = ({
     }
   }, [isPanning]);
 
+  // Пустое состояние
   if (!image) {
     return (
-      <div 
-        className="flex-1 flex items-center justify-center" 
-        style={{ 
-          backgroundImage: 'radial-gradient(circle, rgba(100, 116, 139, 0.2) 1px, transparent 1px)', 
-          backgroundSize: '32px 32px',
-          backgroundColor: '#1a1d27'
-        }}
-      >
-        <div className="text-center animate-fade-in max-w-lg">
-          <div className="text-9xl mb-8 drop-shadow-2xl">🏗️</div>
-          <h2 className="text-3xl font-bold text-slate-200 mb-4">Добро пожаловать!</h2>
-          <p className="text-slate-400 text-lg mb-8">Загрузите изображение, чтобы начать выделять области</p>
-          <div className="flex items-center justify-center gap-4 text-base text-slate-400">
-            <div className="flex items-center gap-3 bg-slate-700/50 px-5 py-3.5 rounded-2xl border border-slate-600/40 shadow-soft">
-              <span className="text-2xl">📁</span>
-              <span className="font-semibold">Загрузить</span>
+      <div className="flex-1 relative overflow-hidden bg-gray-950 no-select">
+        {/* Фоновый паттерн */}
+        <div 
+          className="absolute inset-0 opacity-5 pointer-events-none"
+          style={{ 
+            backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', 
+            backgroundSize: '20px 20px'
+          }}
+        />
+        
+        {/* Пустое состояние */}
+        <div className="relative z-10 flex items-center justify-center h-full">
+          <div className="max-w-md text-center">
+            {/* Зона загрузки */}
+            <div 
+              onClick={onUploadClick}
+              className="border-2 border-dashed border-gray-700 rounded-2xl p-10 cursor-pointer hover:border-blue-500/50 hover:bg-gray-800/30 transition-all group mb-4"
+            >
+              <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🖼️</div>
+              <div className="text-lg font-semibold text-gray-300 mb-2">Загрузите изображение</div>
+              <div className="text-gray-500 text-sm mb-4">Перетащите файл или нажмите для выбора</div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg text-blue-400 text-sm">
+                <span>📁</span>
+                <span>Выбрать файл</span>
+              </div>
             </div>
-            <span className="text-2xl text-slate-500">→</span>
-            <div className="flex items-center gap-3 bg-slate-700/50 px-5 py-3.5 rounded-2xl border border-slate-600/40 shadow-soft">
-              <span className="text-2xl">✏️</span>
-              <span className="font-semibold">Рисовать</span>
-            </div>
-            <span className="text-2xl text-slate-500">→</span>
-            <div className="flex items-center gap-3 bg-slate-700/50 px-5 py-3.5 rounded-2xl border border-slate-600/40 shadow-soft">
-              <span className="text-2xl">💾</span>
-              <span className="font-semibold">Сохранить</span>
-            </div>
+            <div className="text-gray-600 text-xs mt-3">Поддерживаются форматы: PNG, JPG, WEBP</div>
+            
+            {/* Кнопка Открыть проект */}
+            <button 
+              onClick={onOpenClick}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600/20 border border-purple-500/30 rounded-lg text-purple-400 text-sm hover:bg-purple-600/30 transition-all mt-4"
+            >
+              <span>📂</span>
+              <span>Открыть проект</span>
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
+  const cursorStyle = spacePressed || isPanning ? 'cursor-grabbing' : mode === 'draw' ? 'cursor-crosshair' : 'cursor-pointer';
+
   return (
-    <div className="flex-1 relative overflow-hidden">
+    <div className="flex-1 relative overflow-hidden bg-gray-950 no-select">
+      {/* Фоновый паттерн */}
+      <div 
+        className="absolute inset-0 opacity-5 pointer-events-none"
+        style={{ 
+          backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', 
+          backgroundSize: '20px 20px'
+        }}
+      />
+
       <div
         ref={containerRef as React.RefObject<HTMLDivElement>}
-        className="absolute inset-0 overflow-hidden"
-        style={{
-          cursor: spacePressed || isPanning ? 'grab' : mode === 'draw' ? 'crosshair' : 'default',
-          backgroundImage: 'radial-gradient(circle, rgba(100, 116, 139, 0.15) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-          backgroundColor: '#1a1d27'
-        }}
+        className={`absolute inset-0 overflow-hidden ${cursorStyle}`}
       >
         <div
           style={{
@@ -370,25 +380,36 @@ export const Canvas: React.FC<CanvasProps> = ({
             onClick={handleClick}
             onContextMenu={handleContextMenu}
             onMouseLeave={handleMouseLeave}
-            className="shadow-soft-lg rounded-lg"
+            className="shadow-2xl border border-gray-700"
             style={{ display: 'block' }}
           />
         </div>
       </div>
 
-      {/* Hint */}
-      <div className="absolute top-6 right-6 bg-slate-700/70 text-slate-300 text-sm px-6 py-4 rounded-2xl backdrop-blur-md pointer-events-none border border-slate-600/40 shadow-lg flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🖱️</span>
-          <span className="font-medium">зум</span>
-        </div>
-        <span className="text-slate-500">•</span>
-        <div className="flex items-center gap-2">
-          <span className="text-lg">⎵</span>
-          <span>+</span>
-          <span className="text-lg">🖱️</span>
-          <span className="font-medium">панорама</span>
-        </div>
+      {/* Подсказка */}
+      <div className="absolute top-3 right-3 text-[10px] text-gray-600 pointer-events-none">
+        Колесо — зум • Space+ЛКМ — панорама
+      </div>
+
+      {/* Статус-бар */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-800/95 backdrop-blur-sm rounded-full px-4 py-2 text-xs flex items-center gap-3 shadow-lg ring-1 ring-white/10 pointer-events-none">
+        <span className="text-gray-300 font-medium truncate max-w-[120px]">📄 {image.name}</span>
+        <span className="text-gray-600">•</span>
+        <span 
+          className="w-2.5 h-2.5 rounded-full" 
+          style={{ backgroundColor: CATEGORIES.find(c => c.id === activeCategory)?.color }}
+        />
+        <span className="text-gray-300">{CATEGORIES.find(c => c.id === activeCategory)?.name}</span>
+        <span className="text-gray-600">•</span>
+        <span className="text-gray-400">{mode === 'draw' ? '✏️' : '👆'}</span>
+        <span className="text-gray-600">•</span>
+        {currentPoints.length > 0 ? (
+          <span className="text-yellow-400">{currentPoints.length}т → замкните</span>
+        ) : (
+          <span className="text-gray-400">{image.zones.length} зон</span>
+        )}
+        <span className="text-gray-600">•</span>
+        <span className="text-gray-400">{Math.round(zoom * 100)}%</span>
       </div>
     </div>
   );

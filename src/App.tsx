@@ -40,7 +40,6 @@ function App() {
     setPan({ x: newPanX, y: newPanY });
   }, []);
 
-  // Zoom controls
   const zoomIn = useCallback(() => {
     setZoom(z => Math.min(MAX_ZOOM, z * 1.2));
   }, []);
@@ -55,7 +54,6 @@ function App() {
     }
   }, [activeImage, fitToScreen]);
 
-  // Switch image
   const switchImage = useCallback((id: string) => {
     setActiveImageId(id);
     setCurrentPoints([]);
@@ -66,7 +64,6 @@ function App() {
     }
   }, [images, fitToScreen]);
 
-  // Rename
   const startRename = useCallback((id: string, name: string) => {
     setEditingName(id);
     setTempName(name);
@@ -82,7 +79,6 @@ function App() {
     setTempName('');
   }, [editingName, tempName]);
 
-  // Delete image
   const deleteImage = useCallback((id: string) => {
     setImages(prev => {
       const filtered = prev.filter(img => img.id !== id);
@@ -94,7 +90,6 @@ function App() {
     setSelectedZone(null);
   }, [activeImageId]);
 
-  // Delete zone
   const deleteZone = useCallback((zoneId: string) => {
     if (!activeImage) return;
     setImages(prev => prev.map(img =>
@@ -105,16 +100,6 @@ function App() {
     if (selectedZone === zoneId) setSelectedZone(null);
   }, [activeImage, activeImageId, selectedZone]);
 
-  // Update zones
-  const updateZones = useCallback((zones: Zone[]) => {
-    setImages(prev => prev.map(img =>
-      img.id === activeImageId
-        ? { ...img, zones }
-        : img
-    ));
-  }, [activeImageId]);
-
-  // Add zone
   const handleAddZone = useCallback((zone: Zone) => {
     setImages(prev => prev.map(img =>
       img.id === activeImageId
@@ -123,7 +108,6 @@ function App() {
     ));
   }, [activeImageId]);
 
-  // Clear all zones
   const clearAllZones = useCallback(() => {
     if (!activeImageId) return;
     if (!confirm('Удалить все области на текущем изображении?')) return;
@@ -133,7 +117,6 @@ function App() {
     setSelectedZone(null);
   }, [activeImageId]);
 
-  // Load images
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -167,7 +150,6 @@ function App() {
     e.target.value = '';
   }, [fitToScreen]);
 
-  // Open project
   const handleOpenProject = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -201,7 +183,6 @@ function App() {
     e.target.value = '';
   }, [fitToScreen]);
 
-  // Export zones only
   const exportZones = useCallback(() => {
     if (!activeImage) return;
     const data = {
@@ -223,7 +204,6 @@ function App() {
     URL.revokeObjectURL(url);
   }, [activeImage]);
 
-  // Save modal
   const openSaveModal = useCallback(() => {
     setShowSaveModal(true);
   }, []);
@@ -282,7 +262,7 @@ function App() {
   }, [selectedZone, deleteZone, activeImage, fitToScreen]);
 
   return (
-    <div className="h-screen flex flex-col bg-slate-950 text-slate-200 overflow-hidden">
+    <div className="h-screen flex flex-col bg-gray-900 text-white overflow-hidden">
       <Header
         fileInputRef={fileInputRef}
         activeImage={activeImage}
@@ -339,45 +319,9 @@ function App() {
           containerRef={containerRef}
           currentPoints={currentPoints}
           setCurrentPoints={setCurrentPoints}
+          onUploadClick={() => fileInputRef.current?.click()}
+          onOpenClick={() => projectInputRef.current?.click()}
         />
-      </div>
-
-      {/* Status bar */}
-      <div className="h-12 bg-gradient-to-t from-slate-700/70 to-slate-800/70 backdrop-blur-lg border-t border-slate-600/30 flex items-center justify-center px-6 shrink-0">
-        <div className="flex items-center gap-6 text-base">
-          {activeImage && (
-            <>
-              <span className="flex items-center gap-2.5 text-slate-400">
-                <span className="text-lg">📄</span>
-                <span className="text-slate-200 font-semibold">{activeImage.name}</span>
-              </span>
-              <span className="text-slate-500">•</span>
-            </>
-          )}
-          <span className="flex items-center gap-2.5 text-slate-400">
-            <span 
-              className="inline-block w-4 h-4 rounded-xl shadow-lg" 
-              style={{ backgroundColor: CATEGORIES.find(c => c.id === activeCategory)?.color }} 
-            />
-            <span className="text-slate-200 font-semibold">{CATEGORIES.find(c => c.id === activeCategory)?.name}</span>
-          </span>
-          <span className="text-slate-500">•</span>
-          <span className="flex items-center gap-2.5 text-slate-400">
-            <span className="text-lg">{mode === 'draw' ? '✏️' : '👆'}</span>
-            <span className="text-slate-200 font-semibold">{mode === 'draw' ? 'Рисование' : 'Выбор'}</span>
-          </span>
-          <span className="text-slate-500">•</span>
-          <span className="flex items-center gap-2.5 text-slate-400">
-            <span className="text-lg">📐</span>
-            <span className="text-slate-200 font-bold text-lg">{activeImage?.zones.length || 0}</span>
-            <span className="text-sm">областей</span>
-          </span>
-          <span className="text-slate-500">•</span>
-          <span className="flex items-center gap-2.5 text-slate-400">
-            <span className="text-lg">🔍</span>
-            <span className="text-slate-200 font-mono font-bold text-lg">{zoomPercent}%</span>
-          </span>
-        </div>
       </div>
 
       {/* Hidden file inputs */}

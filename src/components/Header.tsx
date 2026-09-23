@@ -101,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
 
-            {/* Экспорт и очистка */}
+            {/* Кнопки зон */}
             {activeImage.zones.length > 0 && (
               <>
                 <button onClick={exportZones} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-xs font-medium transition-colors">💾 Экспорт</button>

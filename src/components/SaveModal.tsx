@@ -9,7 +9,6 @@ interface SaveModalProps {
 
 export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectData, projectName }) => {
   const [copied, setCopied] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
   const sizeRef = useRef(new Blob([projectData]).size);
 
   const handleDownload = useCallback(() => {
@@ -51,79 +50,72 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-fade-in" 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" 
       onClick={onClose}
     >
       <div 
-        className="bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600/40 rounded-3xl shadow-2xl w-full max-w-xl mx-4 max-h-[85vh] overflow-auto" 
+        className="bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col" 
         onClick={e => e.stopPropagation()}
       >
-        <div className="p-8">
-          <div className="flex items-center gap-4 mb-6">
-            <span className="text-4xl">📦</span>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-100">Сохранение проекта</h2>
-              <p className="text-slate-400 text-sm mt-1">Выберите способ сохранения</p>
-            </div>
-          </div>
-          
-          <div className="bg-slate-600/30 rounded-2xl px-5 py-4 mb-8 flex items-center gap-3 border border-slate-500/30">
-            <span className="text-xl">📊</span>
-            <span className="text-base text-slate-300">Размер проекта:</span>
-            <span className="text-base font-bold text-sky-400">{sizeKB} КБ</span>
-          </div>
+        {/* Заголовок */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
+          <span className="text-lg font-bold text-white">📦 Сохранение проекта</span>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl transition-colors">✕</button>
+        </div>
 
-          <div className="space-y-4 mb-8">
+        {/* Контент */}
+        <div className="px-6 py-4 flex-1 overflow-y-auto">
+          <p className="text-sm text-gray-400 mb-4">Размер: {sizeKB} КБ</p>
+
+          {/* 3 кнопки действий */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <button 
               onClick={handleDownload} 
-              className="group w-full flex items-center gap-5 px-6 py-5 bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-sky-500/25 hover:scale-[1.02] active:scale-[0.98]"
+              className="flex flex-col items-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
             >
-              <span className="text-3xl group-hover:scale-110 transition-transform">💾</span>
-              <div className="text-left">
-                <div className="text-lg font-bold">Скачать файл</div>
-                <div className="text-sm text-sky-200/80 mt-0.5">.zoneproj формат</div>
-              </div>
+              <span className="text-2xl">💾</span>
+              <span className="text-sm font-medium text-white">Скачать</span>
+              <span className="text-[10px] opacity-80 text-white">.zoneproj файл</span>
             </button>
             <button 
               onClick={handleOpenTab} 
-              className="group w-full flex items-center gap-5 px-6 py-5 bg-slate-600/40 hover:bg-slate-500/40 text-slate-200 rounded-2xl transition-all duration-300 border border-slate-500/30 hover:scale-[1.02] active:scale-[0.98]"
+              className="flex flex-col items-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
             >
-              <span className="text-3xl group-hover:scale-110 transition-transform">🔗</span>
-              <div className="text-left">
-                <div className="text-lg font-bold">Открыть в новой вкладке</div>
-                <div className="text-sm text-slate-400 mt-0.5">Просмотр JSON</div>
-              </div>
+              <span className="text-2xl">🔗</span>
+              <span className="text-sm font-medium text-white">Новая вкладка</span>
+              <span className="text-[10px] opacity-80 text-white">Просмотр JSON</span>
             </button>
             <button 
               onClick={handleCopy} 
-              className="group w-full flex items-center gap-5 px-6 py-5 bg-slate-600/40 hover:bg-slate-500/40 text-slate-200 rounded-2xl transition-all duration-300 border border-slate-500/30 hover:scale-[1.02] active:scale-[0.98]"
+              className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+                copied ? 'bg-green-600' : 'bg-purple-600 hover:bg-purple-700'
+              }`}
             >
-              <span className="text-3xl group-hover:scale-110 transition-transform">{copied ? '✅' : '📋'}</span>
-              <div className="text-left">
-                <div className="text-lg font-bold">{copied ? 'Скопировано!' : 'Копировать в буфер'}</div>
-                <div className="text-sm text-slate-400 mt-0.5">{copied ? 'Данные в буфере обмена' : 'Ctrl+V для вставки'}</div>
-              </div>
+              <span className="text-2xl">{copied ? '✓' : '📋'}</span>
+              <span className="text-sm font-medium text-white">{copied ? 'Скопировано!' : 'Копировать'}</span>
+              <span className="text-[10px] opacity-80 text-white">{copied ? 'В буфере' : 'Ctrl+V'}</span>
             </button>
           </div>
 
-          <div className="mb-8">
-            <button 
-              onClick={() => setShowPreview(!showPreview)} 
-              className="text-base text-slate-400 hover:text-slate-200 transition-colors duration-200 flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-600/30 font-medium"
-            >
-              <span className="text-sm transition-transform duration-200" style={{ transform: showPreview ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
-              <span>Предпросмотр JSON</span>
-            </button>
-            {showPreview && (
-              <pre className="mt-4 p-5 bg-slate-900/80 border border-slate-600/40 rounded-2xl text-sm text-emerald-300/80 max-h-60 overflow-auto font-mono leading-relaxed shadow-inner">
-                {projectData.length > 5000 ? projectData.slice(0, 5000) + '\n... (обрезано)' : projectData}
-              </pre>
-            )}
-          </div>
+          {/* Предпросмотр JSON */}
+          <details className="mb-2">
+            <summary className="cursor-pointer text-sm text-gray-400 hover:text-gray-300 mb-2">
+              <span className="inline-block transition-transform mr-1">▶</span>
+              Предпросмотр JSON
+            </summary>
+            <textarea 
+              readOnly 
+              value={projectData.length > 5000 ? projectData.slice(0, 5000) + '\n... (обрезано)' : projectData}
+              className="w-full h-48 bg-gray-900 text-gray-300 text-xs font-mono p-3 rounded-lg border border-gray-700 resize-none focus:outline-none focus:border-blue-500"
+            />
+          </details>
+        </div>
 
+        {/* Футер */}
+        <div className="px-6 py-4 border-t border-gray-700 flex justify-end">
           <button 
             onClick={onClose} 
-            className="w-full px-6 py-4 bg-slate-600/40 hover:bg-slate-500/40 text-slate-200 rounded-2xl transition-all duration-300 border border-slate-500/30 text-lg font-bold hover:scale-[1.01] active:scale-[0.99]"
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
           >
             Закрыть
           </button>
