@@ -1,4 +1,5 @@
 import React, { useCallback, useState, useRef } from 'react';
+import { saveAs } from 'file-saver';
 
 interface SaveModalProps {
   isOpen: boolean;
@@ -9,13 +10,14 @@ interface SaveModalProps {
 
 export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectData, projectName }) => {
   const [copied, setCopied] = useState(false);
+  const [lastMethod, setLastMethod] = useState<string>('');
   const sizeRef = useRef(new Blob([projectData]).size);
 
-  const handleDownload = useCallback(() => {
+  // Метод 1: Blob URL + <a download>
+  const handleBlobDownload = useCallback(() => {
     const fileName = `${projectName}.zoneproj`;
     
     try {
-      // Основной метод: Blob URL с <a download>
       const blob = new Blob([projectData], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       
@@ -24,67 +26,135 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
       link.download = fileName;
       link.style.display = 'none';
       
-      // Обязательно добавляем в DOM перед кликом
       document.body.appendChild(link);
-      
-      // Программный клик
       link.click();
       
-      // Удаляем через 5 секунд (даём время на скачивание)
       setTimeout(() => {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       }, 5000);
       
+      setLastMethod('Blob URL (стандартный метод)');
+      console.log('✅ Метод 1: Blob URL + <a download> - успешно');
     } catch (err) {
-      console.error('Blob download failed, trying data URL fallback:', err);
-      
-      // Fallback метод: Data URL
-      try {
-        const base64 = btoa(unescape(encodeURIComponent(projectData)));
-        const dataUrl = `data:application/json;base64,${base64}`;
-        
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = fileName;
-        link.style.display = 'none';
-        
-        document.body.appendChild(link);
-        link.click();
-        
-        setTimeout(() => {
-          document.body.removeChild(link);
-        }, 5000);
-        
-      } catch (fallbackErr) {
-        console.error('Data URL fallback also failed:', fallbackErr);
-        alert('Не удалось скачать файл автоматически. Пожалуйста, используйте кнопку "Копировать в буфер обмена" и сохраните файл вручную.');
-      }
+      console.error('❌ Метод 1 не сработал:', err);
+      alert('Метод 1 (Blob URL) не сработал. Попробуйте другой метод.');
     }
   }, [projectData, projectName]);
 
-  const handleOpenTab = useCallback(() => {
-    const blob = new Blob([projectData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+  // Метод 2: Data URL (base64)
+  const handleDataUrlDownload = useCallback(() => {
+    const fileName = `${projectName}.zoneproj`;
+    
+    try {
+      const base64 = btoa(unescape(encodeURIComponent(projectData)));
+      const dataUrl = `data:application/json;base64,${base64}`;
+      
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = fileName;
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 5000);
+      
+      setLastMethod('Data URL (base64)');
+      console.log('✅ Метод 2: Data URL (base64) - успешно');
+    } catch (err) {
+      console.error('❌ Метод 2 не сработал:', err);
+      alert('Метод 2 (Data URL) не сработал. Попробуйте другой метод.');
+    }
+  }, [projectData, projectName]);
+
+  // Метод 3: FileSaver.js
+  const handleFileSaverDownload = useCallback(() => {
+    const fileName = `${projectName}.zoneproj`;
+    
+    try {
+      const blob = new Blob([projectData], { type: 'application/json;charset=utf-8' });
+      saveAs(blob, fileName);
+      
+      setLastMethod('FileSaver.js (библиотека)');
+      console.log('✅ Метод 3: FileSaver.js - успешно');
+    } catch (err) {
+      console.error('❌ Метод 3 не сработал:', err);
+      alert('Метод 3 (FileSaver.js) не сработал. Попробуйте другой метод.');
+    }
+  }, [projectData, projectName]);
+
+  // Метод 4: Открытие в новой вкладке
+  const handleOpenInNewTab = useCallback(() => {
+    try {
+      const blob = new Blob([projectData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const newWindow = window.open(url, '_blank');
+      
+      if (newWindow) {
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 30000);
+        
+        setLastMethod('Открытие в новой вкладке');
+        console.log('✅ Метод 4: Открытие в новой вкладке - успешно');
+        
+        setTimeout(() => {
+          alert('Файл открыт в новой вкладке.\n\nДля сохранения:\n• Windows/Linux: Ctrl+S\n• Mac: Cmd+S\n\nИли используйте правый клик → "Сохранить как..."');
+        }, 500);
+      } else {
+        throw new Error('Popup заблокирован браузером');
+      }
+    } catch (err) {
+      console.error('❌ Метод 4 не сработал:', err);
+      alert('Метод 4 (новая вкладка) не сработал. Возможно, popup заблокирован. Попробуйте другой метод.');
+    }
   }, [projectData]);
 
-  const handleCopy = useCallback(async () => {
+  // Метод 5: Копирование в буфер обмена
+  const handleCopyToClipboard = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(projectData);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = projectData;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setLastMethod('Копирование в буфер обмена');
+      console.log('✅ Метод 5: Копирование в буфер - успешно');
+      
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+      
+      alert('✅ Содержимое проекта скопировано в буфер обмена!\n\nТеперь:\n1. Откройте текстовый редактор (Блокнот, VS Code и т.д.)\n2. Вставьте содержимое (Ctrl+V / Cmd+V)\n3. Сохраните файл с именем: ' + projectName + '.zoneproj');
+    } catch (err) {
+      console.error('❌ Метод 5 не сработал:', err);
+      
+      // Fallback для старых браузеров
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = projectData;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        setCopied(true);
+        setLastMethod('Копирование в буфер (fallback)');
+        
+        setTimeout(() => {
+          setCopied(false);
+        }, 2000);
+        
+        alert('✅ Содержимое скопировано (fallback метод)!\n\nВставьте в текстовый редактор и сохраните как: ' + projectName + '.zoneproj');
+      } catch (fallbackErr) {
+        console.error('❌ Все методы копирования не сработали:', fallbackErr);
+        alert('Не удалось скопировать в буфер. Пожалуйста, скопируйте содержимое вручную из предпросмотра JSON ниже.');
+      }
     }
-  }, [projectData]);
+  }, [projectData, projectName]);
 
   if (!isOpen) return null;
 
@@ -92,150 +162,118 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
 
   return (
     <div 
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'rgba(0, 0, 0, 0.7)',
-        backdropFilter: 'blur(8px)'
-      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" 
       onClick={onClose}
     >
       <div 
-        style={{
-          background: '#1f2937',
-          borderRadius: 12,
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-          maxWidth: 672,
-          width: '100%',
-          margin: '0 16px',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column'
-        }}
+        className="bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col" 
         onClick={e => e.stopPropagation()}
       >
         {/* Заголовок */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 24px',
-          borderBottom: '1px solid #374151'
-        }}>
-          <span style={{ fontSize: 18, fontWeight: 'bold', color: '#fff' }}>📦 Сохранение проекта</span>
-          <button 
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#9ca3af',
-              fontSize: 20,
-              cursor: 'pointer',
-              padding: 0
-            }}
-          >
-            ✕
-          </button>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
+          <span className="text-lg font-bold text-white">📦 Сохранение проекта</span>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl transition-colors">✕</button>
         </div>
 
         {/* Контент */}
-        <div style={{ padding: '16px 24px', flex: 1, overflowY: 'auto' }}>
-          <p style={{ fontSize: 14, color: '#9ca3af', marginBottom: 16 }}>Размер: {sizeKB} КБ</p>
+        <div className="px-6 py-4 flex-1 overflow-y-auto">
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-sm text-gray-400">Размер: {sizeKB} КБ</p>
+            {lastMethod && (
+              <p className="text-xs text-green-400">Последний метод: {lastMethod}</p>
+            )}
+          </div>
 
-          {/* 3 кнопки действий */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: 12,
-            marginBottom: 16
-          }}>
+          {/* 5 кнопок разных методов */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+            {/* Метод 1: Blob URL */}
             <button 
-              onClick={handleDownload}
-              className="btn-primary"
-              style={{
-                flexDirection: 'column',
-                padding: '12px 16px',
-                gap: 8
-              }}
+              onClick={handleBlobDownload}
+              className="flex flex-col items-center gap-2 px-4 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
             >
-              <span style={{ fontSize: 24 }}>💾</span>
-              <span style={{ fontSize: 14, fontWeight: 500 }}>Скачать</span>
-              <span style={{ fontSize: 10, opacity: 0.8 }}>.zoneproj файл</span>
+              <span className="text-3xl">💾</span>
+              <span className="text-sm font-medium text-white">Метод 1: Blob URL</span>
+              <span className="text-[10px] opacity-80 text-white text-center">Стандартный метод<br/>через &lt;a download&gt;</span>
             </button>
+
+            {/* Метод 2: Data URL */}
             <button 
-              onClick={handleOpenTab}
-              className="btn-indigo"
-              style={{
-                flexDirection: 'column',
-                padding: '12px 16px',
-                gap: 8
-              }}
+              onClick={handleDataUrlDownload}
+              className="flex flex-col items-center gap-2 px-4 py-4 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
             >
-              <span style={{ fontSize: 24 }}>🔗</span>
-              <span style={{ fontSize: 14, fontWeight: 500 }}>Новая вкладка</span>
-              <span style={{ fontSize: 10, opacity: 0.8 }}>Просмотр JSON</span>
+              <span className="text-3xl">🔗</span>
+              <span className="text-sm font-medium text-white">Метод 2: Data URL</span>
+              <span className="text-[10px] opacity-80 text-white text-center">Base64 кодирование<br/>для sandboxed iframe</span>
             </button>
+
+            {/* Метод 3: FileSaver.js */}
             <button 
-              onClick={handleCopy}
-              className={copied ? 'btn-success' : 'btn-purple'}
-              style={{
-                flexDirection: 'column',
-                padding: '12px 16px',
-                gap: 8
-              }}
+              onClick={handleFileSaverDownload}
+              className="flex flex-col items-center gap-2 px-4 py-4 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
             >
-              <span style={{ fontSize: 24 }}>{copied ? '✓' : '📋'}</span>
-              <span style={{ fontSize: 14, fontWeight: 500 }}>{copied ? 'Скопировано!' : 'Копировать'}</span>
-              <span style={{ fontSize: 10, opacity: 0.8 }}>{copied ? 'В буфере' : 'Ctrl+V'}</span>
+              <span className="text-3xl">📥</span>
+              <span className="text-sm font-medium text-white">Метод 3: FileSaver.js</span>
+              <span className="text-[10px] opacity-80 text-white text-center">Библиотека<br/>для надёжного скачивания</span>
+            </button>
+
+            {/* Метод 4: Новая вкладка */}
+            <button 
+              onClick={handleOpenInNewTab}
+              className="flex flex-col items-center gap-2 px-4 py-4 bg-cyan-600 hover:bg-cyan-700 rounded-lg transition-colors"
+            >
+              <span className="text-3xl">🌐</span>
+              <span className="text-sm font-medium text-white">Метод 4: Новая вкладка</span>
+              <span className="text-[10px] opacity-80 text-white text-center">Открыть файл<br/>и сохранить через Ctrl+S</span>
+            </button>
+
+            {/* Метод 5: Буфер обмена */}
+            <button 
+              onClick={handleCopyToClipboard}
+              className={`flex flex-col items-center gap-2 px-4 py-4 rounded-lg transition-colors ${
+                copied ? 'bg-green-600' : 'bg-emerald-600 hover:bg-emerald-700'
+              }`}
+            >
+              <span className="text-3xl">{copied ? '✓' : '📋'}</span>
+              <span className="text-sm font-medium text-white">
+                {copied ? 'Скопировано!' : 'Метод 5: Буфер обмена'}
+              </span>
+              <span className="text-[10px] opacity-80 text-white text-center">
+                {copied ? 'В буфере обмена' : 'Копировать JSON<br/>и сохранить вручную'}
+              </span>
             </button>
           </div>
 
+          {/* Инструкция */}
+          <div className="bg-gray-700/50 rounded-lg p-4 mb-4">
+            <h3 className="text-sm font-semibold text-white mb-2">💡 Рекомендации:</h3>
+            <ul className="text-xs text-gray-300 space-y-1">
+              <li>• <strong>Метод 1</strong> — работает в большинстве случаев</li>
+              <li>• <strong>Метод 2</strong> — если метод 1 не работает (sandboxed iframe)</li>
+              <li>• <strong>Метод 3</strong> — самый надёжный (использует библиотеку)</li>
+              <li>• <strong>Метод 4</strong> — если ничего не помогает (откроется в новой вкладке)</li>
+              <li>• <strong>Метод 5</strong> — крайний случай (копирование вручную)</li>
+            </ul>
+          </div>
+
           {/* Предпросмотр JSON */}
-          <details style={{ marginBottom: 8 }}>
-            <summary style={{
-              cursor: 'pointer',
-              fontSize: 14,
-              color: '#9ca3af',
-              marginBottom: 8,
-              userSelect: 'none'
-            }}>
-              <span style={{ display: 'inline-block', transition: 'transform 0.2s', marginRight: 4 }}>▶</span>
+          <details className="mb-2">
+            <summary className="cursor-pointer text-sm text-gray-400 hover:text-gray-300 mb-2">
+              <span className="inline-block transition-transform mr-1">▶</span>
               Предпросмотр JSON
             </summary>
             <textarea 
               readOnly 
               value={projectData.length > 5000 ? projectData.slice(0, 5000) + '\n... (обрезано)' : projectData}
-              style={{
-                width: '100%',
-                height: 192,
-                background: '#111827',
-                color: '#d1d5db',
-                fontSize: 12,
-                fontFamily: 'monospace',
-                padding: 12,
-                borderRadius: 8,
-                border: '1px solid #374151',
-                resize: 'none',
-                outline: 'none'
-              }}
+              className="w-full h-48 bg-gray-900 text-gray-300 text-xs font-mono p-3 rounded-lg border border-gray-700 resize-none focus:outline-none focus:border-blue-500"
             />
           </details>
         </div>
 
         {/* Футер */}
-        <div style={{
-          padding: '16px 24px',
-          borderTop: '1px solid #374151',
-          display: 'flex',
-          justifyContent: 'flex-end'
-        }}>
+        <div className="px-6 py-4 border-t border-gray-700 flex justify-end">
           <button 
-            onClick={onClose}
-            className="btn-secondary"
+            onClick={onClose} 
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
           >
             Закрыть
           </button>
