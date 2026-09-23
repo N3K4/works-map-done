@@ -36,38 +36,42 @@ export const Header: React.FC<HeaderProps> = ({
   images
 }) => {
   return (
-    <header className="bg-gray-800/95 backdrop-blur-sm border-b border-gray-700 px-4 py-2 flex items-center justify-between shrink-0 z-20">
+    <header className="bg-gradient-to-b from-slate-800/80 to-slate-900/80 backdrop-blur-md border-b border-slate-700/50 px-5 py-2.5 flex items-center justify-between shrink-0 z-20 shadow-soft">
       <div className="flex items-center gap-3">
-        <div className="text-xl">🏗️</div>
-        <h1 className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <div className="text-2xl opacity-90">🏗️</div>
+        <h1 className="text-lg font-semibold bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">
           Зонирование
         </h1>
       </div>
-      <div className="flex items-center gap-2">
-        <button onClick={() => fileInputRef.current?.click()} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-          <span>📁</span><span>Загрузить</span>
+      <div className="flex items-center gap-2.5">
+        <button 
+          onClick={() => fileInputRef.current?.click()} 
+          className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2 shadow-soft hover:shadow-soft-lg hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <span>📁</span>
+          <span>Загрузить</span>
         </button>
 
         {activeImage && (
           <>
             {/* Переключатель режимов */}
-            <div className="flex bg-gray-700 rounded-lg p-0.5 mx-2">
+            <div className="flex bg-slate-700/50 backdrop-blur-sm rounded-xl p-1 mx-3 border border-slate-600/30">
               <button 
                 onClick={() => setMode('draw')} 
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                   mode === 'draw' 
-                    ? 'bg-blue-600 text-white shadow' 
-                    : 'text-gray-300 hover:text-white'
+                    ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-soft' 
+                    : 'text-slate-300 hover:text-white hover:bg-slate-600/50'
                 }`}
               >
                 ✏️ Рисование
               </button>
               <button 
                 onClick={() => { setMode('select'); setCurrentPoints([]); }} 
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                   mode === 'select' 
-                    ? 'bg-blue-600 text-white shadow' 
-                    : 'text-gray-300 hover:text-white'
+                    ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-soft' 
+                    : 'text-slate-300 hover:text-white hover:bg-slate-600/50'
                 }`}
               >
                 👆 Выбор
@@ -75,20 +79,48 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Контролы зума */}
-            <div className="flex items-center bg-gray-700/50 rounded-lg p-0.5 gap-0.5 mr-2">
-              <button onClick={zoomOut} className="px-2 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-600 rounded transition-colors">−</button>
-              <button onClick={resetZoom} className="px-2 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-600 rounded transition-colors min-w-[48px] text-center font-mono">{zoomPercent}%</button>
-              <button onClick={zoomIn} className="px-2 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-600 rounded transition-colors">+</button>
-              <div className="w-px h-4 bg-gray-600 mx-0.5"></div>
-              <button onClick={() => activeImage && fitToScreen(activeImage.img.width, activeImage.img.height)} className="px-2 py-1.5 text-xs text-gray-300 hover:text-white hover:bg-gray-600 rounded transition-colors" title="Вписать">⊡</button>
+            <div className="flex items-center bg-slate-700/40 backdrop-blur-sm rounded-xl p-1 gap-1 mr-3 border border-slate-600/30">
+              <button 
+                onClick={zoomOut} 
+                className="px-2.5 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-600/50 rounded-lg transition-all duration-200"
+              >
+                −
+              </button>
+              <button 
+                onClick={resetZoom} 
+                className="px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-600/50 rounded-lg transition-all duration-200 min-w-[52px] text-center font-mono"
+              >
+                {zoomPercent}%
+              </button>
+              <button 
+                onClick={zoomIn} 
+                className="px-2.5 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-600/50 rounded-lg transition-all duration-200"
+              >
+                +
+              </button>
+              <div className="w-px h-4 bg-slate-600/50 mx-0.5"></div>
+              <button 
+                onClick={() => activeImage && fitToScreen(activeImage.img.width, activeImage.img.height)} 
+                className="px-2.5 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-600/50 rounded-lg transition-all duration-200" 
+                title="Вписать"
+              >
+                ⊡
+              </button>
             </div>
 
             {/* Кнопки проекта */}
-            <div className="flex items-center gap-1 mx-2">
-              <button onClick={openSaveModal} disabled={images.length === 0} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg text-xs font-medium transition-colors">
+            <div className="flex items-center gap-2 mx-3">
+              <button 
+                onClick={openSaveModal} 
+                disabled={images.length === 0} 
+                className="px-4 py-2 bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 disabled:from-slate-600 disabled:to-slate-700 disabled:text-slate-500 rounded-xl text-xs font-medium transition-all duration-200 shadow-soft hover:shadow-soft-lg hover:scale-[1.02] active:scale-[0.98]"
+              >
                 📦 Сохранить
               </button>
-              <button onClick={() => projectInputRef.current?.click()} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-xs font-medium transition-colors">
+              <button 
+                onClick={() => projectInputRef.current?.click()} 
+                className="px-4 py-2 bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 rounded-xl text-xs font-medium transition-all duration-200 shadow-soft hover:shadow-soft-lg hover:scale-[1.02] active:scale-[0.98]"
+              >
                 📂 Открыть
               </button>
             </div>
@@ -96,8 +128,18 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Экспорт и очистка */}
             {activeImage.zones.length > 0 && (
               <>
-                <button onClick={exportZones} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-xs font-medium transition-colors">💾 Экспорт</button>
-                <button onClick={clearAllZones} className="px-3 py-1.5 bg-red-600/80 hover:bg-red-700 rounded-lg text-xs font-medium transition-colors">🗑️ Очистить</button>
+                <button 
+                  onClick={exportZones} 
+                  className="px-4 py-2 bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-xl text-xs font-medium transition-all duration-200 shadow-soft hover:shadow-soft-lg hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  💾 Экспорт
+                </button>
+                <button 
+                  onClick={clearAllZones} 
+                  className="px-4 py-2 bg-gradient-to-br from-rose-500/80 to-rose-600/80 hover:from-rose-400/90 hover:to-rose-500/90 rounded-xl text-xs font-medium transition-all duration-200 shadow-soft hover:shadow-soft-lg hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  🗑️ Очистить
+                </button>
               </>
             )}
           </>

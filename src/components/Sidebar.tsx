@@ -47,30 +47,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
   deleteZone
 }) => {
   return (
-    <aside className="w-64 bg-gray-800/95 border-r border-gray-700 flex flex-col shrink-0 overflow-hidden z-10">
+    <aside className="w-64 bg-gradient-to-b from-slate-800/70 to-slate-900/70 backdrop-blur-md border-r border-slate-700/50 flex flex-col shrink-0 overflow-hidden z-10">
       {/* Секция: Изображения */}
-      <div className="p-3 border-b border-gray-700">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+      <div className="p-4 border-b border-slate-700/50">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
             Изображения ({images.length})
           </h2>
-          <button onClick={() => fileInputRef.current?.click()} className="text-[10px] text-blue-400 hover:text-blue-300">
+          <button 
+            onClick={() => fileInputRef.current?.click()} 
+            className="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium transition-colors duration-200"
+          >
             + Добавить
           </button>
         </div>
-        <div className="space-y-1 max-h-52 overflow-y-auto">
-          {images.length === 0 && <p className="text-gray-600 text-xs italic py-2">Нет изображений</p>}
+        <div className="space-y-1.5 max-h-52 overflow-y-auto">
+          {images.length === 0 && (
+            <p className="text-slate-500 text-xs italic py-3 text-center">Нет изображений</p>
+          )}
           {images.map(img => (
             <div 
               key={img.id} 
               onClick={() => switchImage(img.id)} 
-              className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all group ${
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group ${
                 activeImageId === img.id 
-                  ? 'bg-blue-600/20 ring-1 ring-blue-500/40' 
-                  : 'hover:bg-white/5'
+                  ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 ring-1 ring-indigo-400/40 shadow-soft' 
+                  : 'hover:bg-slate-700/40'
               }`}
             >
-              <div className="w-8 h-8 rounded bg-gray-700 overflow-hidden shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-slate-700/60 overflow-hidden shrink-0 ring-1 ring-slate-600/30">
                 <img src={img.src} alt="" className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
@@ -86,25 +91,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       e.stopPropagation(); 
                     }} 
                     autoFocus 
-                    className="w-full bg-gray-700 text-xs px-1.5 py-0.5 rounded border border-blue-500 outline-none" 
+                    className="w-full bg-slate-700/80 text-xs px-2 py-1 rounded-lg border border-indigo-400/50 text-slate-200" 
                     onClick={(e) => e.stopPropagation()} 
                   />
                 ) : (
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs font-medium truncate">{img.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-medium text-slate-200 truncate">{img.name}</span>
                     <button 
                       onClick={(e) => { e.stopPropagation(); startRename(img.id, img.name); }} 
-                      className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-blue-400 text-[10px]"
+                      className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-indigo-400 text-[10px] transition-all duration-200"
                     >
                       ✎
                     </button>
                   </div>
                 )}
-                <span className="text-[10px] text-gray-500">{img.zones.length} обл.</span>
+                <span className="text-[10px] text-slate-500">{img.zones.length} обл.</span>
               </div>
               <button 
                 onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }} 
-                className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 text-xs p-1"
+                className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 text-xs p-1.5 rounded-lg hover:bg-rose-500/10 transition-all duration-200"
               >
                 ✕
               </button>
@@ -114,9 +119,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Секция: Категории */}
-      <div className="p-3 border-b border-gray-700">
-        <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Категории</h2>
-        <div className="space-y-1">
+      <div className="p-4 border-b border-slate-700/50">
+        <h2 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Категории</h2>
+        <div className="space-y-1.5">
           {CATEGORIES.map((cat, index) => (
             <button 
               key={cat.id} 
@@ -125,14 +130,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 setMode('draw'); 
                 if (currentPoints.length > 0) setCurrentPoints([]); 
               }} 
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all text-left ${
-                activeCategory === cat.id ? 'bg-white/10' : 'hover:bg-white/5'
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-left ${
+                activeCategory === cat.id 
+                  ? 'bg-gradient-to-br from-slate-600/60 to-slate-700/60 ring-1 ring-slate-500/30 shadow-soft' 
+                  : 'hover:bg-slate-700/40'
               }`}
             >
-              <span className="w-3.5 h-3.5 rounded-sm shrink-0" style={{ backgroundColor: cat.color }}></span>
-              <span className="text-xs font-medium flex-1">{cat.name}</span>
-              <span className="text-[10px] text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">{index + 1}</span>
-              <span className="text-[10px] font-bold text-gray-400 min-w-[16px] text-center">
+              <span 
+                className="w-4 h-4 rounded-md shrink-0 shadow-soft" 
+                style={{ backgroundColor: cat.color }}
+              ></span>
+              <span className="text-xs font-medium text-slate-200 flex-1">{cat.name}</span>
+              <span className="text-[10px] text-slate-500 bg-slate-700/50 px-2 py-0.5 rounded-md">{index + 1}</span>
+              <span className="text-[10px] font-semibold text-slate-400 min-w-[18px] text-center">
                 {activeImage ? activeImage.zones.filter((z: any) => z.category === cat.id).length : 0}
               </span>
             </button>
@@ -141,53 +151,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Секция: Области */}
-      <div className="flex-1 overflow-y-auto p-3">
-        <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+      <div className="flex-1 overflow-y-auto p-4">
+        <h2 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">
           Области ({activeImage ? activeImage.zones.length : 0})
         </h2>
-        {!activeImage ? <p className="text-gray-600 text-xs italic">Загрузите изображение</p>
-          : activeImage.zones.length === 0 ? <p className="text-gray-600 text-xs italic">Нет областей</p>
-          : (
-            <div className="space-y-1">
-              {activeImage.zones.map((zone: any) => {
-                const cat = CATEGORIES.find(c => c.id === zone.category);
-                return (
-                  <div 
-                    key={zone.id} 
-                    onClick={() => { setSelectedZone(zone.id); setMode('select'); }} 
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer transition-all group ${
-                      selectedZone === zone.id 
-                        ? 'bg-white/10 ring-1 ring-white/20' 
-                        : 'hover:bg-white/5'
-                    }`}
+        {!activeImage ? (
+          <p className="text-slate-500 text-xs italic text-center py-4">Загрузите изображение</p>
+        ) : activeImage.zones.length === 0 ? (
+          <p className="text-slate-500 text-xs italic text-center py-4">Нет областей</p>
+        ) : (
+          <div className="space-y-1.5">
+            {activeImage.zones.map((zone: any) => {
+              const cat = CATEGORIES.find(c => c.id === zone.category);
+              return (
+                <div 
+                  key={zone.id} 
+                  onClick={() => { setSelectedZone(zone.id); setMode('select'); }} 
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group ${
+                    selectedZone === zone.id 
+                      ? 'bg-gradient-to-br from-slate-600/60 to-slate-700/60 ring-1 ring-slate-400/30 shadow-soft' 
+                      : 'hover:bg-slate-700/40'
+                  }`}
+                >
+                  <span 
+                    className="w-3 h-3 rounded-md shrink-0" 
+                    style={{ backgroundColor: cat?.color }}
+                  ></span>
+                  <span className="text-xs text-slate-200 flex-1 truncate">{zone.label}</span>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); deleteZone(zone.id); }} 
+                    className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 text-xs p-1 rounded-lg hover:bg-rose-500/10 transition-all duration-200"
                   >
-                    <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: cat?.color }}></span>
-                    <span className="text-xs flex-1 truncate">{zone.label}</span>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); deleteZone(zone.id); }} 
-                      className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 text-xs"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Секция: Управление */}
-      <div className="p-3 border-t border-gray-700 bg-gray-800/50">
-        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Управление</h3>
-        <div className="grid grid-cols-1 gap-0.5 text-[10px] text-gray-500">
-          <div><kbd className="text-gray-400">ЛКМ</kbd> — точка / выбрать</div>
-          <div><kbd className="text-gray-400">1-я точка</kbd> — замкнуть</div>
-          <div><kbd className="text-gray-400">ПКМ/Esc</kbd> — отмена</div>
-          <div><kbd className="text-gray-400">Колесо</kbd> — масштаб</div>
-          <div><kbd className="text-gray-400">Space+ЛКМ</kbd> — панорама</div>
-          <div><kbd className="text-gray-400">Ctrl+0</kbd> — вписать</div>
-          <div><kbd className="text-gray-400">D/V</kbd> — режим</div>
-          <div><kbd className="text-gray-400">1-5</kbd> — категория</div>
+      <div className="p-4 border-t border-slate-700/50 bg-slate-800/40">
+        <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Управление</h3>
+        <div className="grid grid-cols-1 gap-1 text-[10px] text-slate-500">
+          <div><kbd className="text-slate-400 bg-slate-700/50 px-1.5 py-0.5 rounded-md">ЛКМ</kbd> — точка / выбрать</div>
+          <div><kbd className="text-slate-400 bg-slate-700/50 px-1.5 py-0.5 rounded-md">1-я точка</kbd> — замкнуть</div>
+          <div><kbd className="text-slate-400 bg-slate-700/50 px-1.5 py-0.5 rounded-md">ПКМ/Esc</kbd> — отмена</div>
+          <div><kbd className="text-slate-400 bg-slate-700/50 px-1.5 py-0.5 rounded-md">Колесо</kbd> — масштаб</div>
+          <div><kbd className="text-slate-400 bg-slate-700/50 px-1.5 py-0.5 rounded-md">Space+ЛКМ</kbd> — панорама</div>
+          <div><kbd className="text-slate-400 bg-slate-700/50 px-1.5 py-0.5 rounded-md">Ctrl+0</kbd> — вписать</div>
+          <div><kbd className="text-slate-400 bg-slate-700/50 px-1.5 py-0.5 rounded-md">D/V</kbd> — режим</div>
+          <div><kbd className="text-slate-400 bg-slate-700/50 px-1.5 py-0.5 rounded-md">1-5</kbd> — категория</div>
         </div>
       </div>
     </aside>

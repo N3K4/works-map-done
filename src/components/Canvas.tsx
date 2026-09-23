@@ -307,11 +307,18 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   if (!image) {
     return (
-      <div className="flex-1 flex items-center justify-center" style={{ backgroundImage: 'radial-gradient(circle, #1f2937 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-        <div className="text-center">
-          <div className="text-6xl mb-4">🏗️</div>
-          <p className="text-gray-400 text-lg">Загрузите изображение для начала работы</p>
-          <p className="text-gray-500 text-sm mt-2">Нажмите "📁 Загрузить" в панели выше</p>
+      <div 
+        className="flex-1 flex items-center justify-center" 
+        style={{ 
+          backgroundImage: 'radial-gradient(circle, rgba(71, 85, 105, 0.3) 1px, transparent 1px)', 
+          backgroundSize: '24px 24px',
+          backgroundColor: '#0c0e14'
+        }}
+      >
+        <div className="text-center animate-fade-in">
+          <div className="text-7xl mb-5 opacity-80">🏗️</div>
+          <p className="text-slate-300 text-lg font-medium">Загрузите изображение для начала работы</p>
+          <p className="text-slate-500 text-sm mt-3">Нажмите "📁 Загрузить" в панели выше</p>
         </div>
       </div>
     );
@@ -324,9 +331,9 @@ export const Canvas: React.FC<CanvasProps> = ({
         className="absolute inset-0 overflow-hidden"
         style={{
           cursor: spacePressed || isPanning ? 'grab' : mode === 'draw' ? 'crosshair' : 'default',
-          backgroundImage: 'radial-gradient(circle, #1f2937 1px, transparent 1px)',
-          backgroundSize: '20px 20px',
-          backgroundColor: '#030712'
+          backgroundImage: 'radial-gradient(circle, rgba(71, 85, 105, 0.25) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+          backgroundColor: '#0c0e14'
         }}
       >
         <div
@@ -347,14 +354,14 @@ export const Canvas: React.FC<CanvasProps> = ({
             onClick={handleClick}
             onContextMenu={handleContextMenu}
             onMouseLeave={handleMouseLeave}
-            className="shadow-2xl border border-gray-700"
+            className="shadow-soft-lg rounded-lg"
             style={{ display: 'block' }}
           />
         </div>
       </div>
 
       {/* Hint */}
-      <div className="absolute top-3 right-3 bg-gray-900/80 text-gray-400 text-xs px-3 py-1.5 rounded-lg backdrop-blur-sm pointer-events-none">
+      <div className="absolute top-4 right-4 bg-slate-800/70 text-slate-400 text-xs px-4 py-2 rounded-xl backdrop-blur-md pointer-events-none border border-slate-700/50 shadow-soft">
         Колесо — зум • Space+ЛКМ — панорама
       </div>
     </div>

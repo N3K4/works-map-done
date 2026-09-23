@@ -282,7 +282,7 @@ function App() {
   }, [selectedZone, deleteZone, activeImage, fitToScreen]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-950 text-white overflow-hidden">
+    <div className="h-screen flex flex-col bg-slate-950 text-slate-200 overflow-hidden">
       <Header
         fileInputRef={fileInputRef}
         activeImage={activeImage}
@@ -343,24 +343,30 @@ function App() {
       </div>
 
       {/* Status bar */}
-      <div className="h-8 bg-gray-800/95 border-t border-gray-700 flex items-center justify-center px-4 shrink-0">
-        <div className="flex items-center gap-4 text-xs text-gray-400">
+      <div className="h-9 bg-gradient-to-t from-slate-900/80 to-slate-800/80 backdrop-blur-md border-t border-slate-700/50 flex items-center justify-center px-4 shrink-0">
+        <div className="flex items-center gap-4 text-xs text-slate-400">
           {activeImage && (
             <>
-              <span>📄 {activeImage.name}</span>
-              <span className="text-gray-600">|</span>
+              <span className="flex items-center gap-1.5">
+                <span className="opacity-70">📄</span>
+                <span className="text-slate-300">{activeImage.name}</span>
+              </span>
+              <span className="text-slate-600">•</span>
             </>
           )}
-          <span>
-            <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: CATEGORIES.find(c => c.id === activeCategory)?.color }} />
-            {CATEGORIES.find(c => c.id === activeCategory)?.name}
+          <span className="flex items-center gap-1.5">
+            <span 
+              className="inline-block w-2.5 h-2.5 rounded-md shadow-soft" 
+              style={{ backgroundColor: CATEGORIES.find(c => c.id === activeCategory)?.color }} 
+            />
+            <span className="text-slate-300">{CATEGORIES.find(c => c.id === activeCategory)?.name}</span>
           </span>
-          <span className="text-gray-600">|</span>
-          <span>{mode === 'draw' ? 'Рисование' : 'Выбор'}</span>
-          <span className="text-gray-600">|</span>
-          <span>Зон: {activeImage?.zones.length || 0}</span>
-          <span className="text-gray-600">|</span>
-          <span>{zoomPercent}%</span>
+          <span className="text-slate-600">•</span>
+          <span className="text-slate-300">{mode === 'draw' ? '✏️ Рисование' : '👆 Выбор'}</span>
+          <span className="text-slate-600">•</span>
+          <span>Зон: <span className="text-slate-300 font-medium">{activeImage?.zones.length || 0}</span></span>
+          <span className="text-slate-600">•</span>
+          <span className="font-mono text-slate-300">{zoomPercent}%</span>
         </div>
       </div>
 

@@ -34,7 +34,6 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback
       const ta = document.createElement('textarea');
       ta.value = projectData;
       document.body.appendChild(ta);
@@ -51,40 +50,61 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
   const sizeKB = (sizeRef.current / 1024).toFixed(1);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm animate-fade-in" 
+      onClick={onClose}
+    >
+      <div 
+        className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-2xl shadow-soft-lg w-full max-w-lg mx-4 max-h-[80vh] overflow-auto" 
+        onClick={e => e.stopPropagation()}
+      >
         <div className="p-6">
-          <h2 className="text-xl font-bold text-white mb-2">📦 Сохранение проекта</h2>
-          <p className="text-gray-400 text-sm mb-4">Размер: {sizeKB} КБ</p>
+          <h2 className="text-xl font-semibold text-slate-100 mb-2">📦 Сохранение проекта</h2>
+          <p className="text-slate-400 text-sm mb-5">Размер: {sizeKB} КБ</p>
 
-          <div className="space-y-3 mb-6">
-            <button onClick={handleDownload} className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+          <div className="space-y-2.5 mb-6">
+            <button 
+              onClick={handleDownload} 
+              className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white rounded-xl transition-all duration-200 shadow-soft hover:shadow-soft-lg hover:scale-[1.01] active:scale-[0.99]"
+            >
               <span className="text-xl">💾</span>
-              <span>Скачать файл (.zoneproj)</span>
+              <span className="font-medium">Скачать файл (.zoneproj)</span>
             </button>
-            <button onClick={handleOpenTab} className="w-full flex items-center gap-3 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">
+            <button 
+              onClick={handleOpenTab} 
+              className="w-full flex items-center gap-3 px-4 py-3 bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 rounded-xl transition-all duration-200 border border-slate-600/30 hover:scale-[1.01] active:scale-[0.99]"
+            >
               <span className="text-xl">🔗</span>
-              <span>Открыть в новой вкладке</span>
+              <span className="font-medium">Открыть в новой вкладке</span>
             </button>
-            <button onClick={handleCopy} className="w-full flex items-center gap-3 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">
+            <button 
+              onClick={handleCopy} 
+              className="w-full flex items-center gap-3 px-4 py-3 bg-slate-700/60 hover:bg-slate-600/60 text-slate-200 rounded-xl transition-all duration-200 border border-slate-600/30 hover:scale-[1.01] active:scale-[0.99]"
+            >
               <span className="text-xl">{copied ? '✅' : '📋'}</span>
-              <span>{copied ? 'Скопировано!' : 'Копировать в буфер обмена'}</span>
+              <span className="font-medium">{copied ? 'Скопировано!' : 'Копировать в буфер обмена'}</span>
             </button>
           </div>
 
-          <div className="mb-4">
-            <button onClick={() => setShowPreview(!showPreview)} className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1">
-              <span>{showPreview ? '▼' : '▶'}</span>
+          <div className="mb-5">
+            <button 
+              onClick={() => setShowPreview(!showPreview)} 
+              className="text-sm text-slate-400 hover:text-slate-200 transition-colors duration-200 flex items-center gap-2"
+            >
+              <span className="text-xs">{showPreview ? '▼' : '▶'}</span>
               <span>Предпросмотр JSON</span>
             </button>
             {showPreview && (
-              <pre className="mt-2 p-3 bg-gray-950 border border-gray-700 rounded-lg text-xs text-green-400 max-h-48 overflow-auto font-mono">
+              <pre className="mt-3 p-4 bg-slate-950/80 border border-slate-700/50 rounded-xl text-xs text-emerald-300/80 max-h-48 overflow-auto font-mono leading-relaxed">
                 {projectData.length > 5000 ? projectData.slice(0, 5000) + '\n... (обрезано)' : projectData}
               </pre>
             )}
           </div>
 
-          <button onClick={onClose} className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors">
+          <button 
+            onClick={onClose} 
+            className="w-full px-4 py-2.5 bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 rounded-xl transition-all duration-200 border border-slate-600/30 hover:scale-[1.01] active:scale-[0.99]"
+          >
             Закрыть
           </button>
         </div>
