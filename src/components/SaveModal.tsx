@@ -11,32 +11,33 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
   const [copied, setCopied] = useState(false);
   const sizeRef = useRef(new Blob([projectData]).size);
 
-  // Открытие в новой вкладке
-  const handleOpenInNewTab = useCallback(() => {
+  // Скачивание файла
+  const handleDownload = useCallback(() => {
+    const fileName = `${projectName}.zoneproj`;
+    
     try {
       const blob = new Blob([projectData], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       
-      const newWindow = window.open(url, '_blank');
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.style.display = 'none';
       
-      if (newWindow) {
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-        }, 30000);
-        
-        console.log('✅ Файл открыт в новой вкладке');
-        
-        setTimeout(() => {
-          alert('Файл открыт в новой вкладке.\n\nДля сохранения:\n• Windows/Linux: Ctrl+S\n• Mac: Cmd+S\n\nИли используйте правый клик → "Сохранить как..."');
-        }, 500);
-      } else {
-        throw new Error('Popup заблокирован браузером');
-      }
+      document.body.appendChild(link);
+      link.click();
+      
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 5000);
+      
+      console.log('✅ Файл скачан:', fileName);
     } catch (err) {
-      console.error('❌ Не удалось открыть в новой вкладке:', err);
-      alert('Не удалось открыть файл в новой вкладке. Возможно, popup заблокирован браузером.\n\nПопробуйте разрешить всплывающие окна для этого сайта или используйте метод "Копировать в буфер обмена".');
+      console.error('❌ Не удалось скачать файл:', err);
+      alert('Не удалось скачать файл. Используйте метод "Копировать в буфер обмена".');
     }
-  }, [projectData]);
+  }, [projectData, projectName]);
 
   // Копирование в буфер обмена
   const handleCopyToClipboard = useCallback(async () => {
@@ -75,27 +76,6 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
         console.error('❌ Все методы копирования не сработали:', fallbackErr);
         alert('Не удалось скопировать в буфер. Пожалуйста, скопируйте содержимое вручную из предпросмотра JSON ниже.');
       }
-    }
-  }, [projectData, projectName]);
-
-  // Обход sandbox через postMessage
-  const handlePostMessageDownload = useCallback(() => {
-    const fileName = `${projectName}.zoneproj`;
-    
-    try {
-      // Отправляем данные родительскому окну
-      window.parent.postMessage({
-        type: 'DOWNLOAD_DATA_ESCAPE',
-        payload: projectData,
-        filename: fileName
-      }, '*');
-      
-      console.log('%c✅ Данные отправлены родительскому окну через postMessage!', 'background: green; color: white; padding: 4px;');
-      
-      alert('✅ Данные отправлены родительскому окну!\n\nЕсли родительское окно настроено на прием сообщений, файл будет скачан автоматически.\n\nЕсли скачивание не началось, откройте консоль браузера (F12), переключитесь на контекст "top" и выполните код приемника (см. документацию).');
-    } catch (err) {
-      console.error('❌ Не удалось отправить postMessage:', err);
-      alert('Не удалось отправить данные через postMessage. Возможно, родительское окно недоступно или блокирует сообщения.\n\nИспользуйте метод "Копировать в буфер обмена" или "Новая вкладка".');
     }
   }, [projectData, projectName]);
 
@@ -164,15 +144,15 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
         <div style={{ padding: '16px 24px', flex: 1, overflowY: 'auto' }}>
           <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '16px' }}>Размер: {sizeKB} КБ</p>
 
-          {/* 3 кнопки действий */}
+          {/* 2 кнопки действий */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: '12px',
             marginBottom: '16px'
           }}>
             <button 
-              onClick={handleOpenInNewTab}
+              onClick={handleDownload}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -188,9 +168,9 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
               onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4338ca'}
               onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4f46e5'}
             >
-              <span style={{ fontSize: '30px' }}>🔗</span>
-              <span style={{ fontSize: '14px', fontWeight: '500', color: '#fff' }}>Новая вкладка</span>
-              <span style={{ fontSize: '10px', opacity: 0.8, color: '#fff' }}>Открыть файл</span>
+              <span style={{ fontSize: '30px' }}>💾</span>
+              <span style={{ fontSize: '14px', fontWeight: '500', color: '#fff' }}>Скачать файл</span>
+              <span style={{ fontSize: '10px', opacity: 0.8, color: '#fff' }}>.zoneproj</span>
             </button>
             <button 
               onClick={handleCopyToClipboard}
@@ -217,27 +197,6 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
               <span style={{ fontSize: '14px', fontWeight: '500', color: '#fff' }}>{copied ? 'Скопировано!' : 'Копировать'}</span>
               <span style={{ fontSize: '10px', opacity: 0.8, color: '#fff' }}>{copied ? 'В буфере' : 'Ctrl+V'}</span>
             </button>
-            <button 
-              onClick={handlePostMessageDownload}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '16px',
-                backgroundColor: '#0891b2',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#0e7490'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#0891b2'}
-            >
-              <span style={{ fontSize: '30px' }}>📨</span>
-              <span style={{ fontSize: '14px', fontWeight: '500', color: '#fff' }}>postMessage</span>
-              <span style={{ fontSize: '10px', opacity: 0.8, color: '#fff' }}>Обход sandbox</span>
-            </button>
           </div>
 
           {/* Инструкция */}
@@ -249,9 +208,8 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
           }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>💡 Как сохранить:</h3>
             <ul style={{ fontSize: '12px', color: '#d1d5db', listStyle: 'none', padding: 0 }}>
-              <li style={{ marginBottom: '4px' }}>• <strong>Новая вкладка</strong> — откроется файл, сохраните через Ctrl+S (Cmd+S на Mac)</li>
-              <li style={{ marginBottom: '4px' }}>• <strong>Копировать</strong> — скопируйте JSON, вставьте в текстовый редактор и сохраните как .zoneproj</li>
-              <li>• <strong>postMessage</strong> — обход sandbox через отправку данных в родительское окно (требует настройки)</li>
+              <li style={{ marginBottom: '4px' }}>• <strong>Скачать файл</strong> — сохранит .zoneproj файл на ваш компьютер</li>
+              <li>• <strong>Копировать</strong> — скопируйте JSON, вставьте в текстовый редактор и сохраните как .zoneproj</li>
             </ul>
           </div>
 
