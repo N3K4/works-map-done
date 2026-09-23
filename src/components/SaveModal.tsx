@@ -11,21 +11,59 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
   const [copied, setCopied] = useState(false);
   const sizeRef = useRef(new Blob([projectData]).size);
 
-  const handleDownload = useCallback(() => {
-    const blob = new Blob([projectData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${projectName}.zoneproj`;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
+  const handleDownload = useCallback(async () => {
+    const fileName = `${projectName}.zoneproj`;
     
-    // Задержка перед удалением элемента и отзыва URL
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
+    // Пробуем современный File System Access API
+    if ('showSaveFilePicker' in window) {
+      try {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName: fileName,
+          types: [{
+            description: 'Zone Project File',
+            accept: { 'application/json': ['.zoneproj'] }
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(projectData);
+        await writable.close();
+        return;
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+        // Fallback на старый метод
+      }
+    }
+    
+    // Fallback: используем data URL вместо blob URL
+    try {
+      const base64 = btoa(unescape(encodeURIComponent(projectData)));
+      const dataUrl = `data:application/json;base64,${base64}`;
+      
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = fileName;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      
+      // Создаём и dispatch клика событие
+      const event = new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      });
+      a.dispatchEvent(event);
+      
+      setTimeout(() => {
+        document.body.removeChild(a);
+      }, 1000);
+    } catch (err) {
+      console.error('Download failed:', err);
+      // Последний fallback - открываем в новом окне
+      const blob = new Blob([projectData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
   }, [projectData, projectName]);
 
   const handleOpenTab = useCallback(() => {
