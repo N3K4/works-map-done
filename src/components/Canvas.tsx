@@ -348,16 +348,12 @@ export const Canvas: React.FC<CanvasProps> = ({
               </div>
               <div className="upload-hint">Можно загрузить несколько файлов сразу</div>
             </div>
-            {images.length > 0 && (
-              <>
-                <div className="or-divider">или</div>
-                <button className="project-btn" onClick={onOpenClick}>
-                  <span>📂</span>
-                  <span>Открыть сохранённый проект</span>
-                </button>
-                <div className="project-hint">Формат .zoneproj</div>
-              </>
-            )}
+            <div className="or-divider">или</div>
+            <button className="project-btn" onClick={onOpenClick}>
+              <span>📂</span>
+              <span>Открыть сохранённый проект</span>
+            </button>
+            <div className="project-hint">Формат .zoneproj</div>
           </div>
         </div>
       )}
