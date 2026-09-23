@@ -30,13 +30,25 @@ function App() {
   // Fit to screen
   const fitToScreen = useCallback((imgW: number, imgH: number) => {
     const mainElement = document.querySelector('main');
-    if (!mainElement) return;
+    if (!mainElement) {
+      console.warn('fitToScreen: main element not found');
+      return;
+    }
     const cw = mainElement.clientWidth;
     const ch = mainElement.clientHeight;
+    
+    if (cw === 0 || ch === 0) {
+      console.warn('fitToScreen: main element has zero dimensions', { cw, ch });
+      return;
+    }
+    
     const scale = Math.min(cw / imgW, ch / imgH) * 0.9;
     const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, scale));
     const newPanX = (cw - imgW * newZoom) / 2;
     const newPanY = (ch - imgH * newZoom) / 2;
+    
+    console.log('fitToScreen:', { imgW, imgH, cw, ch, newZoom, newPanX, newPanY });
+    
     setZoom(newZoom);
     setPan({ x: newPanX, y: newPanY });
   }, []);
@@ -154,36 +166,67 @@ function App() {
   const handleOpenProject = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const text = await file.text();
+    
     try {
+      const text = await file.text();
       const project: ProjectFile = JSON.parse(text);
-      const loadedImages: ProjectImage[] = [];
-      for (const imgData of project.images) {
-        const img = await loadImage(imgData.src);
-        loadedImages.push({
-          id: imgData.id,
-          name: imgData.name,
-          src: imgData.src,
-          img,
-          canvasSize: { width: imgData.width, height: imgData.height },
-          zones: imgData.zones
-        });
+      
+      // Проверяем структуру проекта
+      if (!project.images || !Array.isArray(project.images)) {
+        throw new Error('Неверный формат файла: отсутствует массив images');
       }
+      
+      const loadedImages: ProjectImage[] = [];
+      
+      // Загружаем все изображения
+      for (const imgData of project.images) {
+        try {
+          const img = await loadImage(imgData.src);
+          loadedImages.push({
+            id: imgData.id,
+            name: imgData.name || 'Без имени',
+            src: imgData.src,
+            img,
+            canvasSize: { 
+              width: imgData.width || img.naturalWidth, 
+              height: imgData.height || img.naturalHeight 
+            },
+            zones: imgData.zones || []
+          });
+        } catch (imgErr) {
+          console.error(`Не удалось загрузить изображение: ${imgData.name}`, imgErr);
+        }
+      }
+      
+      if (loadedImages.length === 0) {
+        throw new Error('Не удалось загрузить ни одного изображения');
+      }
+      
+      // Определяем активное изображение
+      const activeId = project.activeImageId && loadedImages.find(i => i.id === project.activeImageId)
+        ? project.activeImageId
+        : loadedImages[0].id;
+      
+      // Устанавливаем состояние
       setImages(loadedImages);
-      setActiveImageId(project.activeImageId || loadedImages[0]?.id || null);
+      setActiveImageId(activeId);
       setSelectedZone(null);
       setCurrentPoints([]);
+      
+      // Подгоняем масштаб после рендера
       setTimeout(() => {
-        if (containerRef.current && loadedImages.length > 0) {
-          const active = loadedImages.find(i => i.id === project.activeImageId) || loadedImages[0];
-          if (active) {
-            fitToScreen(active.canvasSize.width, active.canvasSize.height);
-          }
+        const activeImg = loadedImages.find(i => i.id === activeId);
+        if (activeImg) {
+          fitToScreen(activeImg.canvasSize.width, activeImg.canvasSize.height);
         }
-      }, 300);
+      }, 100);
+      
+      console.log(`Проект загружен: ${loadedImages.length} изображений`);
     } catch (err) {
+      console.error('Ошибка загрузки проекта:', err);
       alert('Ошибка загрузки проекта: ' + (err as Error).message);
     }
+    
     e.target.value = '';
   }, [fitToScreen]);
 
