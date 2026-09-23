@@ -11,58 +11,45 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
   const [copied, setCopied] = useState(false);
   const sizeRef = useRef(new Blob([projectData]).size);
 
-  const handleDownload = useCallback(async () => {
+  const handleDownload = useCallback(() => {
     const fileName = `${projectName}.zoneproj`;
     
-    // Пробуем современный File System Access API
-    if ('showSaveFilePicker' in window) {
-      try {
-        const handle = await (window as any).showSaveFilePicker({
-          suggestedName: fileName,
-          types: [{
-            description: 'Zone Project File',
-            accept: { 'application/json': ['.zoneproj'] }
-          }]
-        });
-        const writable = await handle.createWritable();
-        await writable.write(projectData);
-        await writable.close();
-        return;
-      } catch (err: any) {
-        if (err.name === 'AbortError') return;
-        // Fallback на старый метод
-      }
-    }
-    
-    // Fallback: используем data URL вместо blob URL
     try {
-      const base64 = btoa(unescape(encodeURIComponent(projectData)));
-      const dataUrl = `data:application/json;base64,${base64}`;
+      // Создаём blob и URL
+      const blob = new Blob([projectData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
       
+      // Создаём ссылку
       const a = document.createElement('a');
-      a.href = dataUrl;
+      a.href = url;
       a.download = fileName;
       a.style.display = 'none';
       document.body.appendChild(a);
       
-      // Создаём и dispatch клика событие
-      const event = new MouseEvent('click', {
-        view: window,
-        bubbles: true,
-        cancelable: true
-      });
-      a.dispatchEvent(event);
+      // Кликаем
+      a.click();
       
+      // Очищаем через 2 секунды
       setTimeout(() => {
-        document.body.removeChild(a);
-      }, 1000);
+        if (document.body.contains(a)) {
+          document.body.removeChild(a);
+        }
+        URL.revokeObjectURL(url);
+      }, 2000);
+      
+      console.log('Download initiated:', fileName);
     } catch (err) {
       console.error('Download failed:', err);
-      // Последний fallback - открываем в новом окне
-      const blob = new Blob([projectData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      // Fallback - открываем в новом окне
+      try {
+        const blob = new Blob([projectData], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      } catch (fallbackErr) {
+        console.error('Fallback also failed:', fallbackErr);
+        alert('Не удалось скачать файл. Попробуйте использовать кнопку "Открыть в новой вкладке" и сохранить вручную.');
+      }
     }
   }, [projectData, projectName]);
 
