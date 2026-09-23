@@ -101,23 +101,23 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
         <div className="px-6 py-4 flex-1 overflow-y-auto">
           <p className="text-sm text-gray-400 mb-4">Размер: {sizeKB} КБ</p>
 
-          {/* 3 кнопки действий */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          {/* 2 кнопки действий */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <button 
               onClick={handleOpenInNewTab}
-              className="flex flex-col items-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+              className="flex flex-col items-center gap-2 px-4 py-4 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
             >
-              <span className="text-2xl">🔗</span>
+              <span className="text-3xl">🔗</span>
               <span className="text-sm font-medium text-white">Новая вкладка</span>
               <span className="text-[10px] opacity-80 text-white">Открыть файл</span>
             </button>
             <button 
               onClick={handleCopyToClipboard}
-              className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+              className={`flex flex-col items-center gap-2 px-4 py-4 rounded-lg transition-colors ${
                 copied ? 'bg-green-600' : 'bg-purple-600 hover:bg-purple-700'
               }`}
             >
-              <span className="text-2xl">{copied ? '✓' : '📋'}</span>
+              <span className="text-3xl">{copied ? '✓' : '📋'}</span>
               <span className="text-sm font-medium text-white">{copied ? 'Скопировано!' : 'Копировать'}</span>
               <span className="text-[10px] opacity-80 text-white">{copied ? 'В буфере' : 'Ctrl+V'}</span>
             </button>
