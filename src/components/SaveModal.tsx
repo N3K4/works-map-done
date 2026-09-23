@@ -84,73 +84,188 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backdropFilter: 'blur(4px)'
+      }} 
       onClick={onClose}
     >
       <div 
-        className="bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col" 
+        style={{
+          backgroundColor: '#1f2937',
+          borderRadius: '12px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          maxWidth: '672px',
+          width: '100%',
+          margin: '0 16px',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column'
+        }} 
         onClick={e => e.stopPropagation()}
       >
         {/* Заголовок */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
-          <span className="text-lg font-bold text-white">📦 Сохранение проекта</span>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl transition-colors">✕</button>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 24px',
+          borderBottom: '1px solid #374151'
+        }}>
+          <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#fff' }}>📦 Сохранение проекта</span>
+          <button 
+            onClick={onClose} 
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#9ca3af',
+              fontSize: '20px',
+              cursor: 'pointer',
+              padding: '0',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            ✕
+          </button>
         </div>
 
         {/* Контент */}
-        <div className="px-6 py-4 flex-1 overflow-y-auto">
-          <p className="text-sm text-gray-400 mb-4">Размер: {sizeKB} КБ</p>
+        <div style={{ padding: '16px 24px', flex: 1, overflowY: 'auto' }}>
+          <p style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '16px' }}>Размер: {sizeKB} КБ</p>
 
           {/* 2 кнопки действий */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '12px',
+            marginBottom: '16px'
+          }}>
             <button 
               onClick={handleOpenInNewTab}
-              className="flex flex-col items-center gap-2 px-4 py-4 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '16px',
+                backgroundColor: '#4f46e5',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4338ca'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#4f46e5'}
             >
-              <span className="text-3xl">🔗</span>
-              <span className="text-sm font-medium text-white">Новая вкладка</span>
-              <span className="text-[10px] opacity-80 text-white">Открыть файл</span>
+              <span style={{ fontSize: '30px' }}>🔗</span>
+              <span style={{ fontSize: '14px', fontWeight: '500', color: '#fff' }}>Новая вкладка</span>
+              <span style={{ fontSize: '10px', opacity: 0.8, color: '#fff' }}>Открыть файл</span>
             </button>
             <button 
               onClick={handleCopyToClipboard}
-              className={`flex flex-col items-center gap-2 px-4 py-4 rounded-lg transition-colors ${
-                copied ? 'bg-green-600' : 'bg-purple-600 hover:bg-purple-700'
-              }`}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '16px',
+                backgroundColor: copied ? '#16a34a' : '#9333ea',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={(e) => {
+                if (!copied) e.currentTarget.style.backgroundColor = '#7e22ce'
+              }}
+              onMouseOut={(e) => {
+                if (!copied) e.currentTarget.style.backgroundColor = '#9333ea'
+              }}
             >
-              <span className="text-3xl">{copied ? '✓' : '📋'}</span>
-              <span className="text-sm font-medium text-white">{copied ? 'Скопировано!' : 'Копировать'}</span>
-              <span className="text-[10px] opacity-80 text-white">{copied ? 'В буфере' : 'Ctrl+V'}</span>
+              <span style={{ fontSize: '30px' }}>{copied ? '✓' : '📋'}</span>
+              <span style={{ fontSize: '14px', fontWeight: '500', color: '#fff' }}>{copied ? 'Скопировано!' : 'Копировать'}</span>
+              <span style={{ fontSize: '10px', opacity: 0.8, color: '#fff' }}>{copied ? 'В буфере' : 'Ctrl+V'}</span>
             </button>
           </div>
 
           {/* Инструкция */}
-          <div className="bg-gray-700/50 rounded-lg p-4 mb-4">
-            <h3 className="text-sm font-semibold text-white mb-2">💡 Как сохранить:</h3>
-            <ul className="text-xs text-gray-300 space-y-1">
-              <li>• <strong>Новая вкладка</strong> — откроется файл, сохраните через Ctrl+S (Cmd+S на Mac)</li>
+          <div style={{
+            backgroundColor: 'rgba(55, 65, 81, 0.5)',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '16px'
+          }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#fff', marginBottom: '8px' }}>💡 Как сохранить:</h3>
+            <ul style={{ fontSize: '12px', color: '#d1d5db', listStyle: 'none', padding: 0 }}>
+              <li style={{ marginBottom: '4px' }}>• <strong>Новая вкладка</strong> — откроется файл, сохраните через Ctrl+S (Cmd+S на Mac)</li>
               <li>• <strong>Копировать</strong> — скопируйте JSON, вставьте в текстовый редактор и сохраните как .zoneproj</li>
             </ul>
           </div>
 
           {/* Предпросмотр JSON */}
-          <details className="mb-2">
-            <summary className="cursor-pointer text-sm text-gray-400 hover:text-gray-300 mb-2">
-              <span className="inline-block transition-transform mr-1">▶</span>
+          <details style={{ marginBottom: '8px' }}>
+            <summary style={{
+              cursor: 'pointer',
+              fontSize: '14px',
+              color: '#9ca3af',
+              marginBottom: '8px',
+              userSelect: 'none'
+            }}>
+              <span style={{ display: 'inline-block', transition: 'transform 0.2s', marginRight: '4px' }}>▶</span>
               Предпросмотр JSON
             </summary>
             <textarea 
               readOnly 
               value={projectData.length > 5000 ? projectData.slice(0, 5000) + '\n... (обрезано)' : projectData}
-              className="w-full h-48 bg-gray-900 text-gray-300 text-xs font-mono p-3 rounded-lg border border-gray-700 resize-none focus:outline-none focus:border-blue-500"
+              style={{
+                width: '100%',
+                height: '192px',
+                backgroundColor: '#111827',
+                color: '#d1d5db',
+                fontSize: '12px',
+                fontFamily: 'monospace',
+                padding: '12px',
+                borderRadius: '8px',
+                border: '1px solid #374151',
+                resize: 'none',
+                outline: 'none'
+              }}
             />
           </details>
         </div>
 
         {/* Футер */}
-        <div className="px-6 py-4 border-t border-gray-700 flex justify-end">
+        <div style={{
+          padding: '16px 24px',
+          borderTop: '1px solid #374151',
+          display: 'flex',
+          justifyContent: 'flex-end'
+        }}>
           <button 
             onClick={onClose} 
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#374151',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#fff',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#374151'}
           >
             Закрыть
           </button>
