@@ -55,67 +55,67 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
       onClick={onClose}
     >
       <div 
-        className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-600/30 rounded-3xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] overflow-auto" 
+        className="bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600/40 rounded-3xl shadow-2xl w-full max-w-xl mx-4 max-h-[85vh] overflow-auto" 
         onClick={e => e.stopPropagation()}
       >
-        <div className="p-7">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-3xl">📦</span>
+        <div className="p-8">
+          <div className="flex items-center gap-4 mb-6">
+            <span className="text-4xl">📦</span>
             <div>
-              <h2 className="text-xl font-bold text-slate-100">Сохранение проекта</h2>
-              <p className="text-slate-400 text-xs mt-0.5">Выберите способ сохранения</p>
+              <h2 className="text-2xl font-bold text-slate-100">Сохранение проекта</h2>
+              <p className="text-slate-400 text-sm mt-1">Выберите способ сохранения</p>
             </div>
           </div>
           
-          <div className="bg-slate-700/30 rounded-2xl px-4 py-2.5 mb-6 flex items-center gap-2 border border-slate-600/20">
-            <span className="text-sm">📊</span>
-            <span className="text-sm text-slate-300">Размер проекта:</span>
-            <span className="text-sm font-bold text-sky-400">{sizeKB} КБ</span>
+          <div className="bg-slate-600/30 rounded-2xl px-5 py-4 mb-8 flex items-center gap-3 border border-slate-500/30">
+            <span className="text-xl">📊</span>
+            <span className="text-base text-slate-300">Размер проекта:</span>
+            <span className="text-base font-bold text-sky-400">{sizeKB} КБ</span>
           </div>
 
-          <div className="space-y-3 mb-7">
+          <div className="space-y-4 mb-8">
             <button 
               onClick={handleDownload} 
-              className="group w-full flex items-center gap-4 px-5 py-4 bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-sky-500/20 hover:scale-[1.02] active:scale-[0.98]"
+              className="group w-full flex items-center gap-5 px-6 py-5 bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-sky-500/25 hover:scale-[1.02] active:scale-[0.98]"
             >
-              <span className="text-2xl group-hover:scale-110 transition-transform">💾</span>
+              <span className="text-3xl group-hover:scale-110 transition-transform">💾</span>
               <div className="text-left">
-                <div className="font-semibold">Скачать файл</div>
-                <div className="text-xs text-sky-200/70">.zoneproj формат</div>
+                <div className="text-lg font-bold">Скачать файл</div>
+                <div className="text-sm text-sky-200/80 mt-0.5">.zoneproj формат</div>
               </div>
             </button>
             <button 
               onClick={handleOpenTab} 
-              className="group w-full flex items-center gap-4 px-5 py-4 bg-slate-700/40 hover:bg-slate-600/40 text-slate-200 rounded-2xl transition-all duration-300 border border-slate-600/30 hover:scale-[1.02] active:scale-[0.98]"
+              className="group w-full flex items-center gap-5 px-6 py-5 bg-slate-600/40 hover:bg-slate-500/40 text-slate-200 rounded-2xl transition-all duration-300 border border-slate-500/30 hover:scale-[1.02] active:scale-[0.98]"
             >
-              <span className="text-2xl group-hover:scale-110 transition-transform">🔗</span>
+              <span className="text-3xl group-hover:scale-110 transition-transform">🔗</span>
               <div className="text-left">
-                <div className="font-semibold">Открыть в новой вкладке</div>
-                <div className="text-xs text-slate-400">Просмотр JSON</div>
+                <div className="text-lg font-bold">Открыть в новой вкладке</div>
+                <div className="text-sm text-slate-400 mt-0.5">Просмотр JSON</div>
               </div>
             </button>
             <button 
               onClick={handleCopy} 
-              className="group w-full flex items-center gap-4 px-5 py-4 bg-slate-700/40 hover:bg-slate-600/40 text-slate-200 rounded-2xl transition-all duration-300 border border-slate-600/30 hover:scale-[1.02] active:scale-[0.98]"
+              className="group w-full flex items-center gap-5 px-6 py-5 bg-slate-600/40 hover:bg-slate-500/40 text-slate-200 rounded-2xl transition-all duration-300 border border-slate-500/30 hover:scale-[1.02] active:scale-[0.98]"
             >
-              <span className="text-2xl group-hover:scale-110 transition-transform">{copied ? '✅' : '📋'}</span>
+              <span className="text-3xl group-hover:scale-110 transition-transform">{copied ? '✅' : '📋'}</span>
               <div className="text-left">
-                <div className="font-semibold">{copied ? 'Скопировано!' : 'Копировать в буфер'}</div>
-                <div className="text-xs text-slate-400">{copied ? 'Данные в буфере обмена' : 'Ctrl+V для вставки'}</div>
+                <div className="text-lg font-bold">{copied ? 'Скопировано!' : 'Копировать в буфер'}</div>
+                <div className="text-sm text-slate-400 mt-0.5">{copied ? 'Данные в буфере обмена' : 'Ctrl+V для вставки'}</div>
               </div>
             </button>
           </div>
 
-          <div className="mb-6">
+          <div className="mb-8">
             <button 
               onClick={() => setShowPreview(!showPreview)} 
-              className="text-sm text-slate-400 hover:text-slate-200 transition-colors duration-200 flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-700/30"
+              className="text-base text-slate-400 hover:text-slate-200 transition-colors duration-200 flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-600/30 font-medium"
             >
-              <span className="text-xs transition-transform duration-200" style={{ transform: showPreview ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
-              <span className="font-medium">Предпросмотр JSON</span>
+              <span className="text-sm transition-transform duration-200" style={{ transform: showPreview ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+              <span>Предпросмотр JSON</span>
             </button>
             {showPreview && (
-              <pre className="mt-3 p-4 bg-slate-950/80 border border-slate-700/40 rounded-2xl text-xs text-emerald-300/80 max-h-52 overflow-auto font-mono leading-relaxed shadow-inner">
+              <pre className="mt-4 p-5 bg-slate-900/80 border border-slate-600/40 rounded-2xl text-sm text-emerald-300/80 max-h-60 overflow-auto font-mono leading-relaxed shadow-inner">
                 {projectData.length > 5000 ? projectData.slice(0, 5000) + '\n... (обрезано)' : projectData}
               </pre>
             )}
@@ -123,7 +123,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
 
           <button 
             onClick={onClose} 
-            className="w-full px-5 py-3 bg-slate-700/40 hover:bg-slate-600/40 text-slate-300 rounded-2xl transition-all duration-300 border border-slate-600/30 font-semibold hover:scale-[1.01] active:scale-[0.99]"
+            className="w-full px-6 py-4 bg-slate-600/40 hover:bg-slate-500/40 text-slate-200 rounded-2xl transition-all duration-300 border border-slate-500/30 text-lg font-bold hover:scale-[1.01] active:scale-[0.99]"
           >
             Закрыть
           </button>

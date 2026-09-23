@@ -310,29 +310,29 @@ export const Canvas: React.FC<CanvasProps> = ({
       <div 
         className="flex-1 flex items-center justify-center" 
         style={{ 
-          backgroundImage: 'radial-gradient(circle, rgba(71, 85, 105, 0.25) 1px, transparent 1px)', 
-          backgroundSize: '28px 28px',
-          backgroundColor: '#0c0e14'
+          backgroundImage: 'radial-gradient(circle, rgba(100, 116, 139, 0.2) 1px, transparent 1px)', 
+          backgroundSize: '32px 32px',
+          backgroundColor: '#1a1d27'
         }}
       >
-        <div className="text-center animate-fade-in max-w-md">
-          <div className="text-8xl mb-6 drop-shadow-2xl">🏗️</div>
-          <h2 className="text-2xl font-bold text-slate-200 mb-3">Добро пожаловать!</h2>
-          <p className="text-slate-400 text-base mb-6">Загрузите изображение, чтобы начать выделять области</p>
-          <div className="flex items-center justify-center gap-3 text-sm text-slate-500">
-            <div className="flex items-center gap-2 bg-slate-800/60 px-4 py-2.5 rounded-2xl border border-slate-700/40">
-              <span>📁</span>
-              <span>Загрузить</span>
+        <div className="text-center animate-fade-in max-w-lg">
+          <div className="text-9xl mb-8 drop-shadow-2xl">🏗️</div>
+          <h2 className="text-3xl font-bold text-slate-200 mb-4">Добро пожаловать!</h2>
+          <p className="text-slate-400 text-lg mb-8">Загрузите изображение, чтобы начать выделять области</p>
+          <div className="flex items-center justify-center gap-4 text-base text-slate-400">
+            <div className="flex items-center gap-3 bg-slate-700/50 px-5 py-3.5 rounded-2xl border border-slate-600/40 shadow-soft">
+              <span className="text-2xl">📁</span>
+              <span className="font-semibold">Загрузить</span>
             </div>
-            <span>→</span>
-            <div className="flex items-center gap-2 bg-slate-800/60 px-4 py-2.5 rounded-2xl border border-slate-700/40">
-              <span>✏️</span>
-              <span>Рисовать</span>
+            <span className="text-2xl text-slate-500">→</span>
+            <div className="flex items-center gap-3 bg-slate-700/50 px-5 py-3.5 rounded-2xl border border-slate-600/40 shadow-soft">
+              <span className="text-2xl">✏️</span>
+              <span className="font-semibold">Рисовать</span>
             </div>
-            <span>→</span>
-            <div className="flex items-center gap-2 bg-slate-800/60 px-4 py-2.5 rounded-2xl border border-slate-700/40">
-              <span>💾</span>
-              <span>Сохранить</span>
+            <span className="text-2xl text-slate-500">→</span>
+            <div className="flex items-center gap-3 bg-slate-700/50 px-5 py-3.5 rounded-2xl border border-slate-600/40 shadow-soft">
+              <span className="text-2xl">💾</span>
+              <span className="font-semibold">Сохранить</span>
             </div>
           </div>
         </div>
@@ -347,9 +347,9 @@ export const Canvas: React.FC<CanvasProps> = ({
         className="absolute inset-0 overflow-hidden"
         style={{
           cursor: spacePressed || isPanning ? 'grab' : mode === 'draw' ? 'crosshair' : 'default',
-          backgroundImage: 'radial-gradient(circle, rgba(71, 85, 105, 0.25) 1px, transparent 1px)',
-          backgroundSize: '24px 24px',
-          backgroundColor: '#0c0e14'
+          backgroundImage: 'radial-gradient(circle, rgba(100, 116, 139, 0.15) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+          backgroundColor: '#1a1d27'
         }}
       >
         <div
@@ -377,17 +377,17 @@ export const Canvas: React.FC<CanvasProps> = ({
       </div>
 
       {/* Hint */}
-      <div className="absolute top-5 right-5 bg-slate-800/70 text-slate-400 text-xs px-5 py-3 rounded-2xl backdrop-blur-md pointer-events-none border border-slate-700/40 shadow-lg flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
-          <span>🖱️</span>
-          <span>зум</span>
+      <div className="absolute top-6 right-6 bg-slate-700/70 text-slate-300 text-sm px-6 py-4 rounded-2xl backdrop-blur-md pointer-events-none border border-slate-600/40 shadow-lg flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🖱️</span>
+          <span className="font-medium">зум</span>
         </div>
-        <span className="text-slate-600">•</span>
-        <div className="flex items-center gap-1.5">
-          <span>⎵</span>
+        <span className="text-slate-500">•</span>
+        <div className="flex items-center gap-2">
+          <span className="text-lg">⎵</span>
           <span>+</span>
-          <span>ЛКМ</span>
-          <span>панорама</span>
+          <span className="text-lg">🖱️</span>
+          <span className="font-medium">панорама</span>
         </div>
       </div>
     </div>

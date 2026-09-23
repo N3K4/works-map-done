@@ -343,39 +343,39 @@ function App() {
       </div>
 
       {/* Status bar */}
-      <div className="h-10 bg-gradient-to-t from-slate-900/90 to-slate-800/90 backdrop-blur-lg border-t border-slate-600/30 flex items-center justify-center px-5 shrink-0">
-        <div className="flex items-center gap-5 text-sm">
+      <div className="h-12 bg-gradient-to-t from-slate-700/70 to-slate-800/70 backdrop-blur-lg border-t border-slate-600/30 flex items-center justify-center px-6 shrink-0">
+        <div className="flex items-center gap-6 text-base">
           {activeImage && (
             <>
-              <span className="flex items-center gap-2 text-slate-400">
-                <span className="text-base">📄</span>
-                <span className="text-slate-200 font-medium">{activeImage.name}</span>
+              <span className="flex items-center gap-2.5 text-slate-400">
+                <span className="text-lg">📄</span>
+                <span className="text-slate-200 font-semibold">{activeImage.name}</span>
               </span>
-              <span className="text-slate-600">•</span>
+              <span className="text-slate-500">•</span>
             </>
           )}
-          <span className="flex items-center gap-2 text-slate-400">
+          <span className="flex items-center gap-2.5 text-slate-400">
             <span 
-              className="inline-block w-3 h-3 rounded-lg shadow-md" 
+              className="inline-block w-4 h-4 rounded-xl shadow-lg" 
               style={{ backgroundColor: CATEGORIES.find(c => c.id === activeCategory)?.color }} 
             />
-            <span className="text-slate-200 font-medium">{CATEGORIES.find(c => c.id === activeCategory)?.name}</span>
+            <span className="text-slate-200 font-semibold">{CATEGORIES.find(c => c.id === activeCategory)?.name}</span>
           </span>
-          <span className="text-slate-600">•</span>
-          <span className="flex items-center gap-2 text-slate-400">
-            <span>{mode === 'draw' ? '✏️' : '👆'}</span>
-            <span className="text-slate-200 font-medium">{mode === 'draw' ? 'Рисование' : 'Выбор'}</span>
+          <span className="text-slate-500">•</span>
+          <span className="flex items-center gap-2.5 text-slate-400">
+            <span className="text-lg">{mode === 'draw' ? '✏️' : '👆'}</span>
+            <span className="text-slate-200 font-semibold">{mode === 'draw' ? 'Рисование' : 'Выбор'}</span>
           </span>
-          <span className="text-slate-600">•</span>
-          <span className="flex items-center gap-2 text-slate-400">
-            <span>📐</span>
-            <span className="text-slate-200 font-medium">{activeImage?.zones.length || 0}</span>
-            <span className="text-xs">областей</span>
+          <span className="text-slate-500">•</span>
+          <span className="flex items-center gap-2.5 text-slate-400">
+            <span className="text-lg">📐</span>
+            <span className="text-slate-200 font-bold text-lg">{activeImage?.zones.length || 0}</span>
+            <span className="text-sm">областей</span>
           </span>
-          <span className="text-slate-600">•</span>
-          <span className="flex items-center gap-2 text-slate-400">
-            <span>🔍</span>
-            <span className="text-slate-200 font-mono font-bold">{zoomPercent}%</span>
+          <span className="text-slate-500">•</span>
+          <span className="flex items-center gap-2.5 text-slate-400">
+            <span className="text-lg">🔍</span>
+            <span className="text-slate-200 font-mono font-bold text-lg">{zoomPercent}%</span>
           </span>
         </div>
       </div>
