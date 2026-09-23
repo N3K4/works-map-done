@@ -1,155 +1,193 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ProjectImage, Zone, Mode } from '../types';
+import React from 'react';
 import { CATEGORIES } from '../constants';
 
 interface SidebarProps {
-  images: ProjectImage[];
+  images: any[];
   activeImageId: string | null;
-  onSelectImage: (id: string) => void;
-  onRenameImage: (id: string, name: string) => void;
-  onDeleteImage: (id: string) => void;
-  selectedZoneId: string | null;
-  onSelectZone: (id: string | null) => void;
-  onDeleteZone: () => void;
-  mode: Mode;
+  activeImage: any;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  switchImage: (id: string) => void;
+  editingName: string | null;
+  tempName: string;
+  setTempName: (v: string) => void;
+  confirmRename: () => void;
+  startRename: (id: string, name: string) => void;
+  setEditingName: (v: string | null) => void;
+  deleteImage: (id: string) => void;
+  activeCategory: string;
+  setActiveCategory: (c: string) => void;
+  setMode: (m: 'draw' | 'select') => void;
+  currentPoints: any[];
+  setCurrentPoints: (p: any[]) => void;
+  selectedZone: string | null;
+  setSelectedZone: (id: string | null) => void;
+  deleteZone: (id: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  images, activeImageId, onSelectImage, onRenameImage, onDeleteImage,
-  selectedZoneId, onSelectZone, onDeleteZone, mode
+  images,
+  activeImageId,
+  activeImage,
+  fileInputRef,
+  switchImage,
+  editingName,
+  tempName,
+  setTempName,
+  confirmRename,
+  startRename,
+  setEditingName,
+  deleteImage,
+  activeCategory,
+  setActiveCategory,
+  setMode,
+  currentPoints,
+  setCurrentPoints,
+  selectedZone,
+  setSelectedZone,
+  deleteZone
 }) => {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const activeImage = images.find(img => img.id === activeImageId);
-  const zones = activeImage?.zones || [];
-
-  useEffect(() => {
-    if (editingId && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [editingId]);
-
-  const startRename = (img: ProjectImage) => {
-    setEditingId(img.id);
-    setEditValue(img.name);
-  };
-
-  const confirmRename = () => {
-    if (editingId && editValue.trim()) {
-      onRenameImage(editingId, editValue.trim());
-    }
-    setEditingId(null);
-  };
-
-  const cancelRename = () => {
-    setEditingId(null);
-  };
-
-  const categoryCounts = CATEGORIES.map(cat => ({
-    ...cat,
-    count: zones.filter(z => z.category === cat.id).length
-  }));
-
   return (
-    <aside className="w-64 bg-gray-900 border-r border-gray-700 flex flex-col overflow-hidden shrink-0">
-      {/* Images list */}
-      <div className="p-2 border-b border-gray-700">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2 px-1">Изображения</h3>
-        <div className="max-h-52 overflow-y-auto space-y-1">
-          {images.length === 0 && (
-            <p className="text-gray-500 text-xs px-1">Нет изображений</p>
-          )}
+    <aside className="w-64 bg-gray-800/95 border-r border-gray-700 flex flex-col shrink-0 overflow-hidden z-10">
+      {/* Секция: Изображения */}
+      <div className="p-3 border-b border-gray-700">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+            Изображения ({images.length})
+          </h2>
+          <button onClick={() => fileInputRef.current?.click()} className="text-[10px] text-blue-400 hover:text-blue-300">
+            + Добавить
+          </button>
+        </div>
+        <div className="space-y-1 max-h-52 overflow-y-auto">
+          {images.length === 0 && <p className="text-gray-600 text-xs italic py-2">Нет изображений</p>}
           {images.map(img => (
-            <div
-              key={img.id}
-              className={`flex items-center gap-2 p-1.5 rounded cursor-pointer group transition-colors ${img.id === activeImageId ? 'bg-gray-700' : 'hover:bg-gray-800'}`}
-              onClick={() => onSelectImage(img.id)}
+            <div 
+              key={img.id} 
+              onClick={() => switchImage(img.id)} 
+              className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all group ${
+                activeImageId === img.id 
+                  ? 'bg-blue-600/20 ring-1 ring-blue-500/40' 
+                  : 'hover:bg-white/5'
+              }`}
             >
-              <div className="w-10 h-10 bg-gray-800 rounded overflow-hidden shrink-0">
-                <img src={img.src} alt={img.name} className="w-full h-full object-cover" />
+              <div className="w-8 h-8 rounded bg-gray-700 overflow-hidden shrink-0">
+                <img src={img.src} alt="" className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
-                {editingId === img.id ? (
-                  <input
-                    ref={inputRef}
-                    value={editValue}
-                    onChange={e => setEditValue(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') confirmRename();
-                      if (e.key === 'Escape') cancelRename();
-                    }}
-                    onBlur={confirmRename}
-                    className="w-full bg-gray-800 text-white text-xs px-1 py-0.5 rounded border border-blue-500 outline-none"
+                {editingName === img.id ? (
+                  <input 
+                    type="text" 
+                    value={tempName} 
+                    onChange={(e) => setTempName(e.target.value)} 
+                    onBlur={confirmRename} 
+                    onKeyDown={(e) => { 
+                      if (e.key === 'Enter') confirmRename(); 
+                      if (e.key === 'Escape') { setEditingName(null); setTempName(''); } 
+                      e.stopPropagation(); 
+                    }} 
+                    autoFocus 
+                    className="w-full bg-gray-700 text-xs px-1.5 py-0.5 rounded border border-blue-500 outline-none" 
+                    onClick={(e) => e.stopPropagation()} 
                   />
                 ) : (
-                  <span className="text-xs text-white truncate block">{img.name}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-medium truncate">{img.name}</span>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); startRename(img.id, img.name); }} 
+                      className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-blue-400 text-[10px]"
+                    >
+                      ✎
+                    </button>
+                  </div>
                 )}
-                <span className="text-xs text-gray-500">{img.zones.length} зон</span>
+                <span className="text-[10px] text-gray-500">{img.zones.length} обл.</span>
               </div>
-              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={e => { e.stopPropagation(); startRename(img); }} className="p-1 text-gray-400 hover:text-white text-xs">✎</button>
-                <button onClick={e => { e.stopPropagation(); onDeleteImage(img.id); }} className="p-1 text-gray-400 hover:text-red-400 text-xs">✕</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Categories */}
-      <div className="p-2 border-b border-gray-700">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2 px-1">Категории</h3>
-        <div className="space-y-1">
-          {categoryCounts.map(cat => (
-            <div key={cat.id} className="flex items-center gap-2 px-1 py-1">
-              <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: cat.color }} />
-              <span className="text-xs text-gray-300 flex-1">{cat.name}</span>
-              <span className="text-xs text-gray-500">{cat.count}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Zones list */}
-      <div className="p-2 border-b border-gray-700 flex-1 overflow-y-auto">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2 px-1">
-          Области {mode === 'select' && selectedZoneId && (
-            <button onClick={onDeleteZone} className="ml-2 text-red-400 hover:text-red-300 normal-case">🗑️ Удалить</button>
-          )}
-        </h3>
-        <div className="space-y-1">
-          {zones.length === 0 && (
-            <p className="text-gray-500 text-xs px-1">Нет областей</p>
-          )}
-          {zones.map(zone => {
-            const cat = CATEGORIES.find(c => c.id === zone.category);
-            return (
-              <div
-                key={zone.id}
-                className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${zone.id === selectedZoneId ? 'bg-gray-700 ring-1 ring-blue-500' : 'hover:bg-gray-800'}`}
-                onClick={() => mode === 'select' && onSelectZone(zone.id)}
+              <button 
+                onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }} 
+                className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 text-xs p-1"
               >
-                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat?.color || '#666' }} />
-                <span className="text-xs text-gray-300 truncate flex-1">{zone.label}</span>
-                <span className="text-xs text-gray-500">{zone.points.length}т</span>
-              </div>
-            );
-          })}
+                ✕
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="p-2">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase mb-2 px-1">Управление</h3>
-        <div className="space-y-0.5 text-xs text-gray-500">
-          <div><kbd className="bg-gray-800 px-1 rounded text-gray-400">1-5</kbd> — категория</div>
-          <div><kbd className="bg-gray-800 px-1 rounded text-gray-400">D</kbd> — рисование</div>
-          <div><kbd className="bg-gray-800 px-1 rounded text-gray-400">V</kbd> — выбор</div>
-          <div><kbd className="bg-gray-800 px-1 rounded text-gray-400">Esc</kbd> — отмена</div>
-          <div><kbd className="bg-gray-800 px-1 rounded text-gray-400">Del</kbd> — удалить</div>
-          <div><kbd className="bg-gray-800 px-1 rounded text-gray-400">Space</kbd> — панорама</div>
+      {/* Секция: Категории */}
+      <div className="p-3 border-b border-gray-700">
+        <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Категории</h2>
+        <div className="space-y-1">
+          {CATEGORIES.map((cat, index) => (
+            <button 
+              key={cat.id} 
+              onClick={() => { 
+                setActiveCategory(cat.id); 
+                setMode('draw'); 
+                if (currentPoints.length > 0) setCurrentPoints([]); 
+              }} 
+              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all text-left ${
+                activeCategory === cat.id ? 'bg-white/10' : 'hover:bg-white/5'
+              }`}
+            >
+              <span className="w-3.5 h-3.5 rounded-sm shrink-0" style={{ backgroundColor: cat.color }}></span>
+              <span className="text-xs font-medium flex-1">{cat.name}</span>
+              <span className="text-[10px] text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">{index + 1}</span>
+              <span className="text-[10px] font-bold text-gray-400 min-w-[16px] text-center">
+                {activeImage ? activeImage.zones.filter((z: any) => z.category === cat.id).length : 0}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Секция: Области */}
+      <div className="flex-1 overflow-y-auto p-3">
+        <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+          Области ({activeImage ? activeImage.zones.length : 0})
+        </h2>
+        {!activeImage ? <p className="text-gray-600 text-xs italic">Загрузите изображение</p>
+          : activeImage.zones.length === 0 ? <p className="text-gray-600 text-xs italic">Нет областей</p>
+          : (
+            <div className="space-y-1">
+              {activeImage.zones.map((zone: any) => {
+                const cat = CATEGORIES.find(c => c.id === zone.category);
+                return (
+                  <div 
+                    key={zone.id} 
+                    onClick={() => { setSelectedZone(zone.id); setMode('select'); }} 
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg cursor-pointer transition-all group ${
+                      selectedZone === zone.id 
+                        ? 'bg-white/10 ring-1 ring-white/20' 
+                        : 'hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: cat?.color }}></span>
+                    <span className="text-xs flex-1 truncate">{zone.label}</span>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); deleteZone(zone.id); }} 
+                      className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+      </div>
+
+      {/* Секция: Управление */}
+      <div className="p-3 border-t border-gray-700 bg-gray-800/50">
+        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Управление</h3>
+        <div className="grid grid-cols-1 gap-0.5 text-[10px] text-gray-500">
+          <div><kbd className="text-gray-400">ЛКМ</kbd> — точка / выбрать</div>
+          <div><kbd className="text-gray-400">1-я точка</kbd> — замкнуть</div>
+          <div><kbd className="text-gray-400">ПКМ/Esc</kbd> — отмена</div>
+          <div><kbd className="text-gray-400">Колесо</kbd> — масштаб</div>
+          <div><kbd className="text-gray-400">Space+ЛКМ</kbd> — панорама</div>
+          <div><kbd className="text-gray-400">Ctrl+0</kbd> — вписать</div>
+          <div><kbd className="text-gray-400">D/V</kbd> — режим</div>
+          <div><kbd className="text-gray-400">1-5</kbd> — категория</div>
         </div>
       </div>
     </aside>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ProjectImage, Zone, Mode, ProjectFile } from './types';
+import { ProjectImage, Zone, Mode, ProjectFile, Point } from './types';
 import { CATEGORIES, MIN_ZOOM, MAX_ZOOM } from './constants';
 import { loadImage, generateId } from './utils/geometry';
 import { Header } from './components/Header';
@@ -14,30 +14,124 @@ function App() {
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].id);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [tempName, setTempName] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const openInputRef = useRef<HTMLInputElement>(null);
+  const projectInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const activeImage = images.find(img => img.id === activeImageId) || null;
+  const zoomPercent = Math.round(zoom * 100);
 
   // Fit to screen
-  const fitToScreen = useCallback(() => {
-    if (!activeImage || !containerRef.current) return;
-    const container = containerRef.current;
-    const cw = container.clientWidth;
-    const ch = container.clientHeight;
-    const iw = activeImage.canvasSize.width;
-    const ih = activeImage.canvasSize.height;
-    const scale = Math.min(cw / iw, ch / ih) * 0.9;
+  const fitToScreen = useCallback((imgW: number, imgH: number) => {
+    if (!containerRef.current) return;
+    const cw = containerRef.current.clientWidth;
+    const ch = containerRef.current.clientHeight;
+    const scale = Math.min(cw / imgW, ch / imgH) * 0.9;
     const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, scale));
-    const newPanX = (cw - iw * newZoom) / 2;
-    const newPanY = (ch - ih * newZoom) / 2;
+    const newPanX = (cw - imgW * newZoom) / 2;
+    const newPanY = (ch - imgH * newZoom) / 2;
     setZoom(newZoom);
     setPan({ x: newPanX, y: newPanY });
-  }, [activeImage]);
+  }, []);
+
+  // Zoom controls
+  const zoomIn = useCallback(() => {
+    setZoom(z => Math.min(MAX_ZOOM, z * 1.2));
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    setZoom(z => Math.max(MIN_ZOOM, z / 1.2));
+  }, []);
+
+  const resetZoom = useCallback(() => {
+    if (activeImage) {
+      fitToScreen(activeImage.img.width, activeImage.img.height);
+    }
+  }, [activeImage, fitToScreen]);
+
+  // Switch image
+  const switchImage = useCallback((id: string) => {
+    setActiveImageId(id);
+    setCurrentPoints([]);
+    setSelectedZone(null);
+    const img = images.find(i => i.id === id);
+    if (img) {
+      setTimeout(() => fitToScreen(img.img.width, img.img.height), 30);
+    }
+  }, [images, fitToScreen]);
+
+  // Rename
+  const startRename = useCallback((id: string, name: string) => {
+    setEditingName(id);
+    setTempName(name);
+  }, []);
+
+  const confirmRename = useCallback(() => {
+    if (editingName && tempName.trim()) {
+      setImages(prev => prev.map(img =>
+        img.id === editingName ? { ...img, name: tempName.trim() } : img
+      ));
+    }
+    setEditingName(null);
+    setTempName('');
+  }, [editingName, tempName]);
+
+  // Delete image
+  const deleteImage = useCallback((id: string) => {
+    setImages(prev => {
+      const filtered = prev.filter(img => img.id !== id);
+      if (activeImageId === id) {
+        setActiveImageId(filtered.length > 0 ? filtered[0].id : null);
+      }
+      return filtered;
+    });
+    setSelectedZone(null);
+  }, [activeImageId]);
+
+  // Delete zone
+  const deleteZone = useCallback((zoneId: string) => {
+    if (!activeImage) return;
+    setImages(prev => prev.map(img =>
+      img.id === activeImageId
+        ? { ...img, zones: img.zones.filter(z => z.id !== zoneId) }
+        : img
+    ));
+    if (selectedZone === zoneId) setSelectedZone(null);
+  }, [activeImage, activeImageId, selectedZone]);
+
+  // Update zones
+  const updateZones = useCallback((zones: Zone[]) => {
+    setImages(prev => prev.map(img =>
+      img.id === activeImageId
+        ? { ...img, zones }
+        : img
+    ));
+  }, [activeImageId]);
+
+  // Add zone
+  const handleAddZone = useCallback((zone: Zone) => {
+    setImages(prev => prev.map(img =>
+      img.id === activeImageId
+        ? { ...img, zones: [...img.zones, zone] }
+        : img
+    ));
+  }, [activeImageId]);
+
+  // Clear all zones
+  const clearAllZones = useCallback(() => {
+    if (!activeImageId) return;
+    if (!confirm('Удалить все области на текущем изображении?')) return;
+    setImages(prev => prev.map(img =>
+      img.id === activeImageId ? { ...img, zones: [] } : img
+    ));
+    setSelectedZone(null);
+  }, [activeImageId]);
 
   // Load images
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,22 +155,8 @@ function App() {
           };
           setImages(prev => [...prev, newImage]);
           setActiveImageId(newImage.id);
-          // Fit after a tick to let DOM update
           setTimeout(() => {
-            setImages(current => {
-              const target = current.find(im => im.id === newImage.id);
-              if (target && containerRef.current) {
-                const cw = containerRef.current.clientWidth;
-                const ch = containerRef.current.clientHeight;
-                const iw = target.canvasSize.width;
-                const ih = target.canvasSize.height;
-                const scale = Math.min(cw / iw, ch / ih) * 0.9;
-                const nz = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, scale));
-                setZoom(nz);
-                setPan({ x: (cw - iw * nz) / 2, y: (ch - ih * nz) / 2 });
-              }
-              return current;
-            });
+            fitToScreen(img.naturalWidth, img.naturalHeight);
           }, 50);
         } catch (err) {
           console.error('Failed to load image:', err);
@@ -85,7 +165,7 @@ function App() {
       reader.readAsDataURL(file);
     }
     e.target.value = '';
-  }, []);
+  }, [fitToScreen]);
 
   // Open project
   const handleOpenProject = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,67 +188,21 @@ function App() {
       }
       setImages(loadedImages);
       setActiveImageId(project.activeImageId || loadedImages[0]?.id || null);
-      setSelectedZoneId(null);
+      setSelectedZone(null);
       setTimeout(() => {
         if (containerRef.current && loadedImages.length > 0) {
           const active = loadedImages.find(i => i.id === project.activeImageId) || loadedImages[0];
-          const cw = containerRef.current.clientWidth;
-          const ch = containerRef.current.clientHeight;
-          const iw = active.canvasSize.width;
-          const ih = active.canvasSize.height;
-          const scale = Math.min(cw / iw, ch / ih) * 0.9;
-          const nz = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, scale));
-          setZoom(nz);
-          setPan({ x: (cw - iw * nz) / 2, y: (ch - ih * nz) / 2 });
+          fitToScreen(active.canvasSize.width, active.canvasSize.height);
         }
       }, 100);
     } catch (err) {
       alert('Ошибка загрузки проекта: ' + (err as Error).message);
     }
     e.target.value = '';
-  }, []);
-
-  // Add zone
-  const handleAddZone = useCallback((zone: Zone) => {
-    setImages(prev => prev.map(img =>
-      img.id === activeImageId
-        ? { ...img, zones: [...img.zones, zone] }
-        : img
-    ));
-  }, [activeImageId]);
-
-  // Delete zone
-  const handleDeleteZone = useCallback(() => {
-    if (!selectedZoneId || !activeImageId) return;
-    setImages(prev => prev.map(img =>
-      img.id === activeImageId
-        ? { ...img, zones: img.zones.filter(z => z.id !== selectedZoneId) }
-        : img
-    ));
-    setSelectedZoneId(null);
-  }, [selectedZoneId, activeImageId]);
-
-  // Delete image
-  const handleDeleteImage = useCallback((id: string) => {
-    setImages(prev => {
-      const filtered = prev.filter(img => img.id !== id);
-      if (activeImageId === id) {
-        setActiveImageId(filtered[0]?.id || null);
-      }
-      return filtered;
-    });
-    setSelectedZoneId(null);
-  }, [activeImageId]);
-
-  // Rename image
-  const handleRenameImage = useCallback((id: string, name: string) => {
-    setImages(prev => prev.map(img =>
-      img.id === id ? { ...img, name } : img
-    ));
-  }, []);
+  }, [fitToScreen]);
 
   // Export zones only
-  const handleExport = useCallback(() => {
+  const exportZones = useCallback(() => {
     if (!activeImage) return;
     const data = {
       imageId: activeImage.id,
@@ -189,17 +223,11 @@ function App() {
     URL.revokeObjectURL(url);
   }, [activeImage]);
 
-  // Clear zones
-  const handleClear = useCallback(() => {
-    if (!activeImageId) return;
-    if (!confirm('Удалить все области на текущем изображении?')) return;
-    setImages(prev => prev.map(img =>
-      img.id === activeImageId ? { ...img, zones: [] } : img
-    ));
-    setSelectedZoneId(null);
-  }, [activeImageId]);
+  // Save modal
+  const openSaveModal = useCallback(() => {
+    setShowSaveModal(true);
+  }, []);
 
-  // Save project data
   const getProjectData = useCallback(() => {
     const project: ProjectFile = {
       version: '1.0',
@@ -220,83 +248,81 @@ function App() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in inputs
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       switch (e.key) {
         case '1': case '2': case '3': case '4': case '5':
           setActiveCategory(CATEGORIES[parseInt(e.key) - 1].id);
+          setMode('draw');
           break;
         case 'd': case 'D': case 'в': case 'В':
           setMode('draw');
           break;
         case 'v': case 'V': case 'м': case 'М':
           setMode('select');
-          break;
-        case 'Escape':
-          setSelectedZoneId(null);
+          setCurrentPoints([]);
           break;
         case 'Delete':
-          handleDeleteZone();
+          if (selectedZone) {
+            deleteZone(selectedZone);
+          }
           break;
         case '0':
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
-            fitToScreen();
+            if (activeImage) {
+              fitToScreen(activeImage.img.width, activeImage.img.height);
+            }
           }
           break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleDeleteZone, fitToScreen]);
-
-  // Fit on image switch
-  useEffect(() => {
-    if (activeImageId) {
-      setTimeout(fitToScreen, 50);
-    }
-  }, [activeImageId, fitToScreen]);
-
-  const hasZones = activeImage ? activeImage.zones.length > 0 : false;
-
-  // Status bar info
-  const statusInfo = {
-    fileName: activeImage?.name || '',
-    category: CATEGORIES.find(c => c.id === activeCategory)?.name || '',
-    mode: mode === 'draw' ? 'Рисование' : 'Выбор',
-    zoneCount: activeImage?.zones.length || 0,
-    zoom: Math.round(zoom * 100)
-  };
+  }, [selectedZone, deleteZone, activeImage, fitToScreen]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white overflow-hidden">
       <Header
-        onUpload={() => fileInputRef.current?.click()}
+        fileInputRef={fileInputRef}
+        activeImage={activeImage}
         mode={mode}
         setMode={setMode}
-        zoom={zoom}
-        onZoomIn={() => setZoom(z => Math.min(MAX_ZOOM, z * 1.2))}
-        onZoomOut={() => setZoom(z => Math.max(MIN_ZOOM, z / 1.2))}
-        onFitScreen={fitToScreen}
-        onSave={() => setShowSaveModal(true)}
-        onOpen={() => openInputRef.current?.click()}
-        onExport={handleExport}
-        onClear={handleClear}
-        hasZones={hasZones}
+        setCurrentPoints={setCurrentPoints}
+        zoomPercent={zoomPercent}
+        zoomIn={zoomIn}
+        zoomOut={zoomOut}
+        resetZoom={resetZoom}
+        fitToScreen={fitToScreen}
+        openSaveModal={openSaveModal}
+        projectInputRef={projectInputRef}
+        exportZones={exportZones}
+        clearAllZones={clearAllZones}
+        images={images}
       />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           images={images}
           activeImageId={activeImageId}
-          onSelectImage={setActiveImageId}
-          onRenameImage={handleRenameImage}
-          onDeleteImage={handleDeleteImage}
-          selectedZoneId={selectedZoneId}
-          onSelectZone={setSelectedZoneId}
-          onDeleteZone={handleDeleteZone}
-          mode={mode}
+          activeImage={activeImage}
+          fileInputRef={fileInputRef}
+          switchImage={switchImage}
+          editingName={editingName}
+          tempName={tempName}
+          setTempName={setTempName}
+          confirmRename={confirmRename}
+          startRename={startRename}
+          setEditingName={setEditingName}
+          deleteImage={deleteImage}
+          activeCategory={activeCategory}
+          setActiveCategory={setActiveCategory}
+          setMode={setMode}
+          currentPoints={currentPoints}
+          setCurrentPoints={setCurrentPoints}
+          selectedZone={selectedZone}
+          setSelectedZone={setSelectedZone}
+          deleteZone={deleteZone}
         />
 
         <Canvas
@@ -308,32 +334,33 @@ function App() {
           setZoom={setZoom}
           setPan={setPan}
           onAddZone={handleAddZone}
-          selectedZoneId={selectedZoneId}
-          onSelectZone={setSelectedZoneId}
-          onDeleteZone={handleDeleteZone}
+          selectedZone={selectedZone}
+          setSelectedZone={setSelectedZone}
           containerRef={containerRef}
+          currentPoints={currentPoints}
+          setCurrentPoints={setCurrentPoints}
         />
       </div>
 
       {/* Status bar */}
-      <div className="h-8 bg-gray-900 border-t border-gray-700 flex items-center justify-center px-4 shrink-0">
+      <div className="h-8 bg-gray-800/95 border-t border-gray-700 flex items-center justify-center px-4 shrink-0">
         <div className="flex items-center gap-4 text-xs text-gray-400">
-          {statusInfo.fileName && (
+          {activeImage && (
             <>
-              <span>📄 {statusInfo.fileName}</span>
+              <span>📄 {activeImage.name}</span>
               <span className="text-gray-600">|</span>
             </>
           )}
           <span>
             <span className="inline-block w-2 h-2 rounded-full mr-1" style={{ backgroundColor: CATEGORIES.find(c => c.id === activeCategory)?.color }} />
-            {statusInfo.category}
+            {CATEGORIES.find(c => c.id === activeCategory)?.name}
           </span>
           <span className="text-gray-600">|</span>
-          <span>{statusInfo.mode}</span>
+          <span>{mode === 'draw' ? 'Рисование' : 'Выбор'}</span>
           <span className="text-gray-600">|</span>
-          <span>Зон: {statusInfo.zoneCount}</span>
+          <span>Зон: {activeImage?.zones.length || 0}</span>
           <span className="text-gray-600">|</span>
-          <span>{statusInfo.zoom}%</span>
+          <span>{zoomPercent}%</span>
         </div>
       </div>
 
@@ -347,7 +374,7 @@ function App() {
         onChange={handleUpload}
       />
       <input
-        ref={openInputRef}
+        ref={projectInputRef}
         type="file"
         accept=".zoneproj,.json"
         className="hidden"

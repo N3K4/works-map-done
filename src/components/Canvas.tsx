@@ -9,21 +9,22 @@ interface CanvasProps {
   activeCategory: string;
   zoom: number;
   pan: { x: number; y: number };
-  setZoom: (z: number) => void;
+  setZoom: (fn: (z: number) => number) => void;
   setPan: (p: { x: number; y: number }) => void;
   onAddZone: (zone: Zone) => void;
-  selectedZoneId: string | null;
-  onSelectZone: (id: string | null) => void;
-  onDeleteZone: () => void;
+  selectedZone: string | null;
+  setSelectedZone: (id: string | null) => void;
   containerRef: React.RefObject<HTMLDivElement>;
+  currentPoints: Point[];
+  setCurrentPoints: (p: Point[]) => void;
 }
 
 export const Canvas: React.FC<CanvasProps> = ({
   image, mode, activeCategory, zoom, pan, setZoom, setPan,
-  onAddZone, selectedZoneId, onSelectZone, onDeleteZone, containerRef
+  onAddZone, selectedZone, setSelectedZone, containerRef,
+  currentPoints, setCurrentPoints
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [drawingPoints, setDrawingPoints] = useState<Point[]>([]);
   const [mousePos, setMousePos] = useState<Point | null>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [spacePressed, setSpacePressed] = useState(false);
@@ -64,7 +65,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     image.zones.forEach(zone => {
       const cat = CATEGORIES.find(c => c.id === zone.category);
       const color = cat?.color || '#666';
-      const isSelected = zone.id === selectedZoneId;
+      const isSelected = zone.id === selectedZone;
       const fillAlpha = isSelected ? 0.55 : 0.3;
       const lineWidth = isSelected ? 3 : 1.5;
 
@@ -97,12 +98,12 @@ export const Canvas: React.FC<CanvasProps> = ({
     });
 
     // Draw current drawing
-    if (drawingPoints.length > 0) {
+    if (currentPoints.length > 0) {
       const cat = CATEGORIES.find(c => c.id === activeCategory);
       const color = cat?.color || '#666';
 
       ctx.beginPath();
-      drawingPoints.forEach((p, i) => {
+      currentPoints.forEach((p, i) => {
         if (i === 0) ctx.moveTo(p.x, p.y);
         else ctx.lineTo(p.x, p.y);
       });
@@ -110,9 +111,9 @@ export const Canvas: React.FC<CanvasProps> = ({
       if (mousePos) {
         ctx.lineTo(mousePos.x, mousePos.y);
         // Close hint line
-        if (drawingPoints.length >= 3) {
+        if (currentPoints.length >= 3) {
           ctx.moveTo(mousePos.x, mousePos.y);
-          ctx.lineTo(drawingPoints[0].x, drawingPoints[0].y);
+          ctx.lineTo(currentPoints[0].x, currentPoints[0].y);
         }
       }
 
@@ -123,7 +124,7 @@ export const Canvas: React.FC<CanvasProps> = ({
       ctx.setLineDash([]);
 
       // Draw points
-      drawingPoints.forEach((p, i) => {
+      currentPoints.forEach((p, i) => {
         const isFirst = i === 0;
         const radius = isFirst ? 8 / zoom : 5 / zoom;
 
@@ -137,18 +138,18 @@ export const Canvas: React.FC<CanvasProps> = ({
       });
 
       // First point highlight when can close
-      if (drawingPoints.length >= 3 && mousePos) {
-        const dist = distance(mousePos, drawingPoints[0]);
+      if (currentPoints.length >= 3 && mousePos) {
+        const dist = distance(mousePos, currentPoints[0]);
         if (dist < CLOSE_RADIUS / zoom) {
           ctx.beginPath();
-          ctx.arc(drawingPoints[0].x, drawingPoints[0].y, 12 / zoom, 0, Math.PI * 2);
+          ctx.arc(currentPoints[0].x, currentPoints[0].y, 12 / zoom, 0, Math.PI * 2);
           ctx.strokeStyle = '#fff';
           ctx.lineWidth = 2 / zoom;
           ctx.stroke();
         }
       }
     }
-  }, [image, drawingPoints, mousePos, selectedZoneId, zoom, activeCategory]);
+  }, [image, currentPoints, mousePos, selectedZone, zoom, activeCategory]);
 
   // Wheel zoom
   useEffect(() => {
@@ -162,24 +163,23 @@ export const Canvas: React.FC<CanvasProps> = ({
       const mouseY = e.clientY - rect.top;
 
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.max(0.1, Math.min(10, zoom * delta));
-
-      // Zoom toward cursor
-      const scale = newZoom / zoom;
-      const newPanX = mouseX - scale * (mouseX - pan.x);
-      const newPanY = mouseY - scale * (mouseY - pan.y);
-
-      setZoom(newZoom);
-      setPan({ x: newPanX, y: newPanY });
+      setZoom(prevZoom => {
+        const newZoom = Math.max(0.1, Math.min(10, prevZoom * delta));
+        const scale = newZoom / prevZoom;
+        const newPanX = mouseX - scale * (mouseX - pan.x);
+        const newPanY = mouseY - scale * (mouseY - pan.y);
+        setPan({ x: newPanX, y: newPanY });
+        return newZoom;
+      });
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
-  }, [zoom, pan, setZoom, setPan, containerRef]);
+  }, [pan, setZoom, setPan, containerRef]);
 
   // Reset drawing on mode/image change
   useEffect(() => {
-    setDrawingPoints([]);
+    setCurrentPoints([]);
   }, [mode, image?.id]);
 
   // Keyboard
@@ -190,7 +190,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         setSpacePressed(true);
       }
       if (e.code === 'Escape') {
-        setDrawingPoints([]);
+        setCurrentPoints([]);
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -206,13 +206,12 @@ export const Canvas: React.FC<CanvasProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, []);
+  }, [setCurrentPoints]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const pos = { x: e.clientX, y: e.clientY };
     mouseDownPosRef.current = pos;
 
-    // Middle button or space+left = pan
     if (e.button === 1 || (e.button === 0 && spacePressed)) {
       setIsPanning(true);
       panStartRef.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
@@ -237,8 +236,6 @@ export const Canvas: React.FC<CanvasProps> = ({
       panStartRef.current = null;
       return;
     }
-
-    // Check drag distance
     if (mouseDownPosRef.current) {
       const dragDist = distance(mouseDownPosRef.current, { x: e.clientX, y: e.clientY });
       if (dragDist > DRAG_THRESHOLD) {
@@ -253,7 +250,6 @@ export const Canvas: React.FC<CanvasProps> = ({
     if (e.button !== 0) return;
     if (spacePressed || isPanning) return;
 
-    // Check drag distance
     if (mouseDownPosRef.current) {
       const dragDist = distance(mouseDownPosRef.current, { x: e.clientX, y: e.clientY });
       if (dragDist > DRAG_THRESHOLD) return;
@@ -262,47 +258,44 @@ export const Canvas: React.FC<CanvasProps> = ({
     const canvasPos = screenToCanvas(e.clientX, e.clientY);
 
     if (mode === 'draw') {
-      if (drawingPoints.length >= 3) {
-        // Check if clicking near first point to close
-        const dist = distance(canvasPos, drawingPoints[0]);
+      if (currentPoints.length >= 3) {
+        const dist = distance(canvasPos, currentPoints[0]);
         if (dist < CLOSE_RADIUS / zoom) {
           const cat = CATEGORIES.find(c => c.id === activeCategory);
           const zoneCount = image?.zones.filter(z => z.category === activeCategory).length || 0;
           const newZone: Zone = {
             id: Math.random().toString(36).substring(2, 15) + Date.now().toString(36),
-            points: [...drawingPoints],
+            points: [...currentPoints],
             category: activeCategory,
             label: `${cat?.name || 'Область'} ${zoneCount + 1}`
           };
           onAddZone(newZone);
-          setDrawingPoints([]);
+          setCurrentPoints([]);
           return;
         }
       }
-      setDrawingPoints([...drawingPoints, canvasPos]);
+      setCurrentPoints([...currentPoints, canvasPos]);
     } else if (mode === 'select') {
-      // Find zone under cursor
       if (image) {
         let found = false;
-        // Iterate in reverse (top zones first)
         for (let i = image.zones.length - 1; i >= 0; i--) {
           if (pointInPolygon(canvasPos, image.zones[i].points)) {
-            onSelectZone(image.zones[i].id);
+            setSelectedZone(image.zones[i].id);
             found = true;
             break;
           }
         }
         if (!found) {
-          onSelectZone(null);
+          setSelectedZone(null);
         }
       }
     }
-  }, [mode, drawingPoints, zoom, activeCategory, image, screenToCanvas, onAddZone, onSelectZone, spacePressed, isPanning]);
+  }, [mode, currentPoints, zoom, activeCategory, image, screenToCanvas, onAddZone, setSelectedZone, spacePressed, isPanning, setCurrentPoints]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    setDrawingPoints([]);
-  }, []);
+    setCurrentPoints([]);
+  }, [setCurrentPoints]);
 
   const handleMouseLeave = useCallback(() => {
     setMousePos(null);
