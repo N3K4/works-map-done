@@ -37,9 +37,14 @@ export const Canvas: React.FC<CanvasProps> = ({
   const screenToCanvas = useCallback((sx: number, sy: number): Point => {
     const container = containerRef.current;
     if (!container) return { x: 0, y: 0 };
-    const rect = container.getBoundingClientRect();
-    const relX = sx - rect.left;
-    const relY = sy - rect.top;
+    // Получаем viewport (main element) - родитель контейнера
+    const viewport = container.parentElement;
+    if (!viewport) return { x: 0, y: 0 };
+    const viewportRect = viewport.getBoundingClientRect();
+    // Координаты относительно viewport
+    const relX = sx - viewportRect.left;
+    const relY = sy - viewportRect.top;
+    // Преобразуем в координаты canvas
     const x = (relX - pan.x) / zoom;
     const y = (relY - pan.y) / zoom;
     return { x, y };
@@ -153,17 +158,23 @@ export const Canvas: React.FC<CanvasProps> = ({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    
+    // Получаем viewport (main element)
+    const viewport = container.parentElement;
+    if (!viewport) return;
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const rect = container.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
+      // Координаты мыши относительно viewport, а не контейнера
+      const viewportRect = viewport.getBoundingClientRect();
+      const mouseX = e.clientX - viewportRect.left;
+      const mouseY = e.clientY - viewportRect.top;
 
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
       setZoom(prevZoom => {
         const newZoom = Math.max(0.1, Math.min(10, prevZoom * delta));
         const scale = newZoom / prevZoom;
+        // Пересчитываем pan так, чтобы точка под курсором оставалась на месте
         const newPanX = mouseX - scale * (mouseX - pan.x);
         const newPanY = mouseY - scale * (mouseY - pan.y);
         setPan({ x: newPanX, y: newPanY });
@@ -171,8 +182,9 @@ export const Canvas: React.FC<CanvasProps> = ({
       });
     };
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
+    // Добавляем listener на viewport, а не на контейнер
+    viewport.addEventListener('wheel', handleWheel, { passive: false });
+    return () => viewport.removeEventListener('wheel', handleWheel);
   }, [pan, setZoom, setPan, containerRef]);
 
   useEffect(() => {
