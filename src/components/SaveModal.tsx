@@ -14,59 +14,51 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
   const handleDownload = useCallback(() => {
     const fileName = `${projectName}.zoneproj`;
     
-    // В sandboxed iframe скачивание через <a download> блокируется
-    // Самый надёжный способ - открыть файл в новой вкладке
     try {
+      // Основной метод: Blob URL с <a download>
       const blob = new Blob([projectData], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       
-      // Открываем в новой вкладке
-      const newWindow = window.open(url, '_blank');
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.style.display = 'none';
       
-      if (newWindow) {
-        // Успешно открыли
-        console.log('File opened in new tab:', fileName);
-        
-        // Очищаем URL через 30 секунд (даём время на сохранение)
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-        }, 30000);
-        
-        // Показываем инструкцию пользователю
-        setTimeout(() => {
-          alert(`Файл открыт в новой вкладке.\n\nДля сохранения:\n• Windows/Linux: Ctrl+S\n• Mac: Cmd+S\n\nИли используйте правый клик → "Сохранить как..."`);
-        }, 500);
-      } else {
-        // Браузер заблокировал popup
-        throw new Error('Popup blocked');
-      }
+      // Обязательно добавляем в DOM перед кликом
+      document.body.appendChild(link);
+      
+      // Программный клик
+      link.click();
+      
+      // Удаляем через 5 секунд (даём время на скачивание)
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 5000);
+      
     } catch (err) {
-      console.error('Failed to open in new tab:', err);
+      console.error('Blob download failed, trying data URL fallback:', err);
       
-      // Последний fallback - показываем содержимое в textarea
+      // Fallback метод: Data URL
       try {
-        const textarea = document.createElement('textarea');
-        textarea.value = projectData;
-        textarea.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:80%;z-index:10000;background:#1f2937;color:#d1d5db;padding:20px;font-family:monospace;font-size:12px;border:2px solid #4b5563;border-radius:8px;';
+        const base64 = btoa(unescape(encodeURIComponent(projectData)));
+        const dataUrl = `data:application/json;base64,${base64}`;
         
-        const instructions = document.createElement('div');
-        instructions.innerHTML = `
-          <div style="position:fixed;top:10%;left:50%;transform:translateX(-50%);z-index:10001;background:#1f2937;color:#d1d5db;padding:20px;border-radius:8px;border:2px solid #4b5563;max-width:600px;text-align:center;">
-            <h3 style="margin:0 0 10px 0;">Скопируйте содержимое файла</h3>
-            <p style="margin:0 0 15px 0;">Нажмите Ctrl+A (Cmd+A на Mac), затем Ctrl+C (Cmd+C) для копирования</p>
-            <p style="margin:0 0 15px 0;">Затем вставьте в текстовый редактор и сохраните как <strong>${fileName}</strong></p>
-            <button onclick="this.parentElement.remove();document.querySelector('textarea').remove();" style="background:#2563eb;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;">Закрыть</button>
-          </div>
-        `;
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = fileName;
+        link.style.display = 'none';
         
-        document.body.appendChild(textarea);
-        document.body.appendChild(instructions);
+        document.body.appendChild(link);
+        link.click();
         
-        // Выделяем весь текст
-        textarea.select();
-      } catch (finalErr) {
-        console.error('All download methods failed:', finalErr);
-        alert('Не удалось открыть файл. Пожалуйста, используйте кнопку "Копировать в буфер обмена" и сохраните файл вручную.');
+        setTimeout(() => {
+          document.body.removeChild(link);
+        }, 5000);
+        
+      } catch (fallbackErr) {
+        console.error('Data URL fallback also failed:', fallbackErr);
+        alert('Не удалось скачать файл автоматически. Пожалуйста, используйте кнопку "Копировать в буфер обмена" и сохраните файл вручную.');
       }
     }
   }, [projectData, projectName]);
