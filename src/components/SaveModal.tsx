@@ -17,8 +17,15 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
     const a = document.createElement('a');
     a.href = url;
     a.download = `${projectName}.zoneproj`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    
+    // Задержка перед удалением элемента и отзыва URL
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
   }, [projectData, projectName]);
 
   const handleOpenTab = useCallback(() => {
