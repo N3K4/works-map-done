@@ -156,6 +156,159 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
     }
   }, [projectData, projectName]);
 
+  // Метод 6: Download через window.open с data URL
+  const handleWindowOpenDataUrl = useCallback(() => {
+    const fileName = `${projectName}.zoneproj`;
+    
+    try {
+      const base64 = btoa(unescape(encodeURIComponent(projectData)));
+      const dataUrl = `data:application/json;base64,${base64}`;
+      
+      // Открываем data URL в новом окне
+      const newWindow = window.open(dataUrl, '_blank');
+      
+      if (newWindow) {
+        setLastMethod('window.open с data URL');
+        console.log('✅ Метод 6: window.open с data URL - успешно');
+        
+        setTimeout(() => {
+          alert('Файл открыт в новой вкладке.\n\nДля сохранения:\n• Windows/Linux: Ctrl+S\n• Mac: Cmd+S\n\nИли используйте правый клик → "Сохранить как..."');
+        }, 500);
+      } else {
+        throw new Error('Popup заблокирован');
+      }
+    } catch (err) {
+      console.error('❌ Метод 6 не сработал:', err);
+      alert('Метод 6 (window.open с data URL) не сработал. Попробуйте другой метод.');
+    }
+  }, [projectData, projectName]);
+
+  // Метод 7: Download через скрытый iframe
+  const handleIframeDownload = useCallback(() => {
+    const fileName = `${projectName}.zoneproj`;
+    
+    try {
+      const blob = new Blob([projectData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Создаём скрытый iframe
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = url;
+      
+      document.body.appendChild(iframe);
+      
+      // Через секунду пытаемся скачать через ссылку внутри iframe
+      setTimeout(() => {
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (iframeDoc) {
+            const link = iframeDoc.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.click();
+          }
+        } catch (e) {
+          console.warn('Не удалось получить доступ к iframe:', e);
+        }
+        
+        // Очищаем через 5 секунд
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          URL.revokeObjectURL(url);
+        }, 5000);
+      }, 1000);
+      
+      setLastMethod('Скрытый iframe');
+      console.log('✅ Метод 7: Скрытый iframe - запущен');
+    } catch (err) {
+      console.error('❌ Метод 7 не сработал:', err);
+      alert('Метод 7 (iframe) не сработал. Попробуйте другой метод.');
+    }
+  }, [projectData, projectName]);
+
+  // Метод 8: Download через form submission
+  const handleFormDownload = useCallback(() => {
+    const fileName = `${projectName}.zoneproj`;
+    
+    try {
+      // Создаём форму
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `data:application/json;charset=utf-8,${encodeURIComponent(projectData)}`;
+      form.target = '_blank';
+      
+      // Добавляем скрытое поле
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'download';
+      input.value = fileName;
+      form.appendChild(input);
+      
+      document.body.appendChild(form);
+      form.submit();
+      
+      setTimeout(() => {
+        document.body.removeChild(form);
+      }, 1000);
+      
+      setLastMethod('Form submission');
+      console.log('✅ Метод 8: Form submission - успешно');
+    } catch (err) {
+      console.error('❌ Метод 8 не сработал:', err);
+      alert('Метод 8 (form submission) не сработал. Попробуйте другой метод.');
+    }
+  }, [projectData, projectName]);
+
+  // Метод 9: Download через window.location
+  const handleWindowLocationDownload = useCallback(() => {
+    const fileName = `${projectName}.zoneproj`;
+    
+    try {
+      const blob = new Blob([projectData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Сохраняем текущую позицию для возврата
+      const currentUrl = window.location.href;
+      
+      // Меняем location
+      window.location.href = url;
+      
+      // Через 2 секунды возвращаемся назад
+      setTimeout(() => {
+        window.location.href = currentUrl;
+        URL.revokeObjectURL(url);
+      }, 2000);
+      
+      setLastMethod('window.location.href');
+      console.log('✅ Метод 9: window.location.href - запущен');
+    } catch (err) {
+      console.error('❌ Метод 9 не сработал:', err);
+      alert('Метод 9 (window.location) не сработал. Попробуйте другой метод.');
+    }
+  }, [projectData, projectName]);
+
+  // Метод 10: Download через msSaveBlob (для старых Edge/IE)
+  const handleMsSaveBlob = useCallback(() => {
+    const fileName = `${projectName}.zoneproj`;
+    
+    try {
+      const blob = new Blob([projectData], { type: 'application/json' });
+      
+      // Проверяем поддержку msSaveBlob
+      if ((navigator as any).msSaveBlob) {
+        (navigator as any).msSaveBlob(blob, fileName);
+        setLastMethod('msSaveBlob (IE/Edge)');
+        console.log('✅ Метод 10: msSaveBlob - успешно');
+      } else {
+        throw new Error('msSaveBlob не поддерживается');
+      }
+    } catch (err) {
+      console.error('❌ Метод 10 не сработал:', err);
+      alert('Метод 10 (msSaveBlob) не поддерживается в этом браузере. Попробуйте другой метод.');
+    }
+  }, [projectData, projectName]);
+
   if (!isOpen) return null;
 
   const sizeKB = (sizeRef.current / 1024).toFixed(1);
@@ -184,8 +337,8 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
             )}
           </div>
 
-          {/* 5 кнопок разных методов */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+          {/* 10 кнопок разных методов */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-6">
             {/* Метод 1: Blob URL */}
             <button 
               onClick={handleBlobDownload}
@@ -241,17 +394,69 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose, projectDa
                 {copied ? 'В буфере обмена' : 'Копировать JSON<br/>и сохранить вручную'}
               </span>
             </button>
+
+            {/* Метод 6: window.open с data URL */}
+            <button 
+              onClick={handleWindowOpenDataUrl}
+              className="flex flex-col items-center gap-2 px-4 py-4 bg-teal-600 hover:bg-teal-700 rounded-lg transition-colors"
+            >
+              <span className="text-3xl">🪟</span>
+              <span className="text-sm font-medium text-white">Метод 6: window.open</span>
+              <span className="text-[10px] opacity-80 text-white text-center">Открыть data URL<br/>в новом окне</span>
+            </button>
+
+            {/* Метод 7: Скрытый iframe */}
+            <button 
+              onClick={handleIframeDownload}
+              className="flex flex-col items-center gap-2 px-4 py-4 bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors"
+            >
+              <span className="text-3xl">🖼️</span>
+              <span className="text-sm font-medium text-white">Метод 7: Iframe</span>
+              <span className="text-[10px] opacity-80 text-white text-center">Скрытый iframe<br/>для обхода ограничений</span>
+            </button>
+
+            {/* Метод 8: Form submission */}
+            <button 
+              onClick={handleFormDownload}
+              className="flex flex-col items-center gap-2 px-4 py-4 bg-pink-600 hover:bg-pink-700 rounded-lg transition-colors"
+            >
+              <span className="text-3xl">📝</span>
+              <span className="text-sm font-medium text-white">Метод 8: Form</span>
+              <span className="text-[10px] opacity-80 text-white text-center">Через форму<br/>POST запрос</span>
+            </button>
+
+            {/* Метод 9: window.location */}
+            <button 
+              onClick={handleWindowLocationDownload}
+              className="flex flex-col items-center gap-2 px-4 py-4 bg-lime-600 hover:bg-lime-700 rounded-lg transition-colors"
+            >
+              <span className="text-3xl">📍</span>
+              <span className="text-sm font-medium text-white">Метод 9: Location</span>
+              <span className="text-[10px] opacity-80 text-white text-center">Через window.location<br/>с автовозвратом</span>
+            </button>
+
+            {/* Метод 10: msSaveBlob */}
+            <button 
+              onClick={handleMsSaveBlob}
+              className="flex flex-col items-center gap-2 px-4 py-4 bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
+            >
+              <span className="text-3xl">🔷</span>
+              <span className="text-sm font-medium text-white">Метод 10: msSaveBlob</span>
+              <span className="text-[10px] opacity-80 text-white text-center">Для старых<br/>IE/Edge браузеров</span>
+            </button>
           </div>
 
           {/* Инструкция */}
           <div className="bg-gray-700/50 rounded-lg p-4 mb-4">
             <h3 className="text-sm font-semibold text-white mb-2">💡 Рекомендации:</h3>
             <ul className="text-xs text-gray-300 space-y-1">
-              <li>• <strong>Метод 1</strong> — работает в большинстве случаев</li>
-              <li>• <strong>Метод 2</strong> — если метод 1 не работает (sandboxed iframe)</li>
-              <li>• <strong>Метод 3</strong> — самый надёжный (использует библиотеку)</li>
-              <li>• <strong>Метод 4</strong> — если ничего не помогает (откроется в новой вкладке)</li>
+              <li>• <strong>Метод 1-3</strong> — стандартные методы скачивания (пробуйте по порядку)</li>
+              <li>• <strong>Метод 4-6</strong> — открытие в новой вкладке/окне (сохраните через Ctrl+S)</li>
+              <li>• <strong>Метод 7</strong> — обход ограничений через скрытый iframe</li>
+              <li>• <strong>Метод 8-9</strong> — альтернативные способы через form/location</li>
+              <li>• <strong>Метод 10</strong> — только для старых IE/Edge браузеров</li>
               <li>• <strong>Метод 5</strong> — крайний случай (копирование вручную)</li>
+              <li className="text-yellow-300 mt-2">⚠️ Если все методы не работают, используйте Метод 5 (копирование)</li>
             </ul>
           </div>
 
