@@ -2,10 +2,12 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ProjectImage, Zone, Mode, ProjectFile, Point, Category } from './types';
 import { DEFAULT_CATEGORIES, MIN_ZOOM, MAX_ZOOM } from './constants';
 import { loadImage, generateId } from './utils/geometry';
+import { renderPngBlob, downloadBlob } from './utils/render';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Canvas } from './components/Canvas';
 import { SaveModal } from './components/SaveModal';
+import { ExportModal } from './components/ExportModal';
 
 function App() {
   const [images, setImages] = useState<ProjectImage[]>([]);
@@ -14,10 +16,13 @@ function App() {
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [activeCategory, setActiveCategory] = useState(categories[0].id);
   const [showLabels, setShowLabels] = useState(true);
+  /** Множитель размера названий и площадей (настраивается в меню экспорта) */
+  const [labelScale, setLabelScale] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [editingName, setEditingName] = useState<string | null>(null);
   const [tempName, setTempName] = useState('');
@@ -231,6 +236,11 @@ function App() {
         setActiveCategory(prev => cats.some(c => c.id === prev) ? prev : cats[0].id);
       }
 
+      // Восстанавливаем настройку масштаба подписей
+      if (typeof (project as any).labelScale === 'number' && (project as any).labelScale > 0) {
+        setLabelScale(Math.min(4, Math.max(0.5, (project as any).labelScale)));
+      }
+
       const loadedImages: ProjectImage[] = [];
 
       // Загружаем все изображения
@@ -308,24 +318,47 @@ function App() {
       }))
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${activeImage.name}_zones.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `${activeImage.name}_zones.json`);
   }, [activeImage, categories]);
+
+  /** Экспорт PNG в нативном разрешении изображения (умноженном на scale) — без потери качества.
+   *  Используется из меню «Экспорт» сайдбара (быстрая кнопка). */
+  const exportPng = useCallback(async (scale: number = 1) => {
+    if (!activeImage) return;
+    try {
+      const blob = await renderPngBlob({
+        img: activeImage.img,
+        width: activeImage.canvasSize.width,
+        height: activeImage.canvasSize.height,
+        zones: activeImage.zones,
+        categories,
+        labelScale,
+        showLabels,
+        scale,
+      });
+      const suffix = scale > 1 ? `@${scale}x` : '';
+      downloadBlob(blob, `${activeImage.name}${suffix}.png`);
+    } catch (err) {
+      console.error('Ошибка экспорта PNG:', err);
+      alert('Не удалось экспортировать PNG: ' + (err as Error).message);
+    }
+  }, [activeImage, categories, labelScale, showLabels]);
 
   const openSaveModal = useCallback(() => {
     setShowSaveModal(true);
   }, []);
 
+  const openExportModal = useCallback(() => {
+    setShowExportModal(true);
+  }, []);
+
   const getProjectData = useCallback(() => {
-    const project: ProjectFile & { categories?: Category[] } = {
-      version: '1.1',
+    const project: ProjectFile = {
+      version: '1.2',
       exportedAt: new Date().toISOString(),
       activeImageId: activeImageId || '',
       categories,
+      labelScale,
       images: images.map(img => ({
         id: img.id,
         name: img.name,
@@ -336,7 +369,7 @@ function App() {
       }))
     };
     return JSON.stringify(project, null, 2);
-  }, [images, activeImageId, categories]);
+  }, [images, activeImageId, categories, labelScale]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -395,7 +428,7 @@ function App() {
         fitToScreen={fitToScreen}
         openSaveModal={openSaveModal}
         projectInputRef={projectInputRef}
-        exportZones={exportZones}
+        openExportModal={openExportModal}
         clearAllZones={clearAllZones}
         images={images}
         showLabels={showLabels}
@@ -432,6 +465,11 @@ function App() {
           updateZone={updateZone}
           showLabels={showLabels}
           setShowLabels={setShowLabels}
+          labelScale={labelScale}
+          setLabelScale={setLabelScale}
+          openExportModal={openExportModal}
+          exportPng={exportPng}
+          exportZones={exportZones}
         />
 
         <Canvas
@@ -440,6 +478,7 @@ function App() {
           activeCategory={activeCategory}
           categories={categories}
           showLabels={showLabels}
+          labelScale={labelScale}
           zoom={zoom}
           pan={pan}
           setZoom={setZoom}
@@ -479,6 +518,18 @@ function App() {
         onClose={() => setShowSaveModal(false)}
         projectData={getProjectData()}
         projectName={activeImage?.name || 'project'}
+      />
+
+      {/* Export modal: PNG + настройка масштаба названий/площадей */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        activeImage={activeImage}
+        categories={categories}
+        labelScale={labelScale}
+        setLabelScale={setLabelScale}
+        showLabels={showLabels}
+        exportZones={exportZones}
       />
     </div>
   );

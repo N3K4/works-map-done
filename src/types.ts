@@ -26,6 +26,9 @@ export interface ProjectFile {
   version: string;
   exportedAt: string;
   activeImageId: string;
+  categories?: Category[];
+  /** Множитель размера подписей (номер помещения / площадь) на плане и в PNG */
+  labelScale?: number;
   images: {
     id: string;
     name: string;
