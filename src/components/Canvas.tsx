@@ -1,12 +1,14 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { Point, Zone, ProjectImage, Mode } from '../types';
-import { CATEGORIES, CLOSE_RADIUS, DRAG_THRESHOLD } from '../constants';
+import { Point, Zone, ProjectImage, Mode, Category } from '../types';
+import { CLOSE_RADIUS, DRAG_THRESHOLD } from '../constants';
 import { pointInPolygon, distance, hexToRgba } from '../utils/geometry';
 
 interface CanvasProps {
   image: ProjectImage | null;
   mode: Mode;
   activeCategory: string;
+  categories: Category[];
+  showLabels: boolean;
   zoom: number;
   pan: { x: number; y: number };
   setZoom: (z: number) => void;
@@ -23,7 +25,7 @@ interface CanvasProps {
 }
 
 export const Canvas: React.FC<CanvasProps> = ({
-  image, mode, activeCategory, zoom, pan, setZoom, setPan,
+  image, mode, activeCategory, categories, showLabels, zoom, pan, setZoom, setPan,
   onAddZone, selectedZone, setSelectedZone, containerRef,
   currentPoints, setCurrentPoints, onUploadClick, onOpenClick, images
 }) => {
@@ -80,7 +82,7 @@ export const Canvas: React.FC<CanvasProps> = ({
 
     // Draw zones
     image.zones.forEach(zone => {
-      const cat = CATEGORIES.find(c => c.id === zone.category);
+      const cat = categories.find(c => c.id === zone.category);
       const color = cat?.color || '#666';
       const isSelected = zone.id === selectedZone;
       const fillAlpha = isSelected ? 0.55 : 0.3;
@@ -99,23 +101,33 @@ export const Canvas: React.FC<CanvasProps> = ({
       ctx.lineWidth = lineWidth / zoom;
       ctx.stroke();
 
-      if (zone.points.length > 0) {
+      if (showLabels && zone.points.length > 0) {
         const cx = zone.points.reduce((s, p) => s + p.x, 0) / zone.points.length;
         const cy = zone.points.reduce((s, p) => s + p.y, 0) / zone.points.length;
-        ctx.font = `${14 / zoom}px sans-serif`;
-        ctx.fillStyle = 'white';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-        ctx.lineWidth = 3 / zoom;
-        ctx.strokeText(zone.label, cx, cy);
-        ctx.fillText(zone.label, cx, cy);
+        // Название зоны = номер помещения; при наличии — площадь второй строкой
+        const lines: string[] = [];
+        if (zone.roomNumber) lines.push(zone.roomNumber);
+        if (zone.area != null) lines.push(`${zone.area} м²`);
+        if (lines.length > 0) {
+          ctx.font = `${14 / zoom}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+          ctx.lineWidth = 3 / zoom;
+          const lineHeight = 18 / zoom;
+          const startY = cy - ((lines.length - 1) * lineHeight) / 2;
+          lines.forEach((line, li) => {
+            ctx.strokeText(line, cx, startY + li * lineHeight);
+            ctx.fillStyle = 'white';
+            ctx.fillText(line, cx, startY + li * lineHeight);
+          });
+        }
       }
     });
 
     // Draw current drawing
     if (currentPoints.length > 0) {
-      const cat = CATEGORIES.find(c => c.id === activeCategory);
+      const cat = categories.find(c => c.id === activeCategory);
       const color = cat?.color || '#666';
 
       ctx.beginPath();
@@ -162,7 +174,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         }
       }
     }
-  }, [image, currentPoints, mousePos, selectedZone, zoom, activeCategory]);
+  }, [image, currentPoints, mousePos, selectedZone, zoom, activeCategory, categories, showLabels]);
 
   // Wheel zoom
   useEffect(() => {
@@ -285,15 +297,16 @@ export const Canvas: React.FC<CanvasProps> = ({
       if (currentPoints.length >= 3) {
         const dist = distance(canvasPos, currentPoints[0]);
         if (dist < CLOSE_RADIUS / zoom) {
-          const cat = CATEGORIES.find(c => c.id === activeCategory);
-          const zoneCount = image?.zones.filter(z => z.category === activeCategory).length || 0;
+          // Название не задаём: у зоны есть номер помещения и площадь — их вводит пользователь
           const newZone: Zone = {
             id: Math.random().toString(36).substring(2, 15) + Date.now().toString(36),
             points: [...currentPoints],
             category: activeCategory,
-            label: `${cat?.name || 'Область'} ${zoneCount + 1}`
+            roomNumber: '',
+            area: null
           };
           onAddZone(newZone);
+          setSelectedZone(newZone.id);
           setCurrentPoints([]);
           return;
         }
@@ -392,9 +405,9 @@ export const Canvas: React.FC<CanvasProps> = ({
             <div className="status-divider">•</div>
             <div 
               className="status-dot" 
-              style={{ backgroundColor: CATEGORIES.find(c => c.id === activeCategory)?.color }}
+              style={{ backgroundColor: categories.find(c => c.id === activeCategory)?.color }}
             ></div>
-            <div className="status-item">{CATEGORIES.find(c => c.id === activeCategory)?.name}</div>
+            <div className="status-item">{categories.find(c => c.id === activeCategory)?.name || 'Без категории'}</div>
             <div className="status-divider">•</div>
             <div className="status-item">{mode === 'draw' ? '✏️' : '👆'}</div>
             {currentPoints.length > 0 && mode === 'draw' && (

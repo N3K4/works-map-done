@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ProjectImage, Zone, Mode, ProjectFile, Point } from './types';
-import { CATEGORIES, MIN_ZOOM, MAX_ZOOM } from './constants';
+import { ProjectImage, Zone, Mode, ProjectFile, Point, Category } from './types';
+import { DEFAULT_CATEGORIES, MIN_ZOOM, MAX_ZOOM } from './constants';
 import { loadImage, generateId } from './utils/geometry';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -11,7 +11,9 @@ function App() {
   const [images, setImages] = useState<ProjectImage[]>([]);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('draw');
-  const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].id);
+  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  const [activeCategory, setActiveCategory] = useState(categories[0].id);
+  const [showLabels, setShowLabels] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
@@ -36,19 +38,17 @@ function App() {
     }
     const cw = mainElement.clientWidth;
     const ch = mainElement.clientHeight;
-    
+
     if (cw === 0 || ch === 0) {
       console.warn('fitToScreen: main element has zero dimensions', { cw, ch });
       return;
     }
-    
+
     const scale = Math.min(cw / imgW, ch / imgH) * 0.9;
     const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, scale));
     const newPanX = (cw - imgW * newZoom) / 2;
     const newPanY = (ch - imgH * newZoom) / 2;
-    
-    console.log('fitToScreen:', { imgW, imgH, cw, ch, newZoom, newPanX, newPanY });
-    
+
     setZoom(newZoom);
     setPan({ x: newPanX, y: newPanY });
   }, []);
@@ -121,6 +121,14 @@ function App() {
     ));
   }, [activeImageId]);
 
+  const updateZone = useCallback((zoneId: string, updates: Partial<Zone>) => {
+    setImages(prev => prev.map(img =>
+      img.id === activeImageId
+        ? { ...img, zones: img.zones.map(z => z.id === zoneId ? { ...z, ...updates } : z) }
+        : img
+    ));
+  }, [activeImageId]);
+
   const clearAllZones = useCallback(() => {
     if (!activeImageId) return;
     if (!confirm('Удалить все области на текущем изображении?')) return;
@@ -129,6 +137,46 @@ function App() {
     ));
     setSelectedZone(null);
   }, [activeImageId]);
+
+  // ===== Категории: создание / переименование / цвет / удаление =====
+  const addCategory = useCallback((name: string, color: string) => {
+    const cat: Category = { id: generateId(), name: name.trim() || 'Новая категория', color };
+    setCategories(prev => [...prev, cat]);
+    setActiveCategory(cat.id);
+    return cat.id;
+  }, []);
+
+  const renameCategory = useCallback((id: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setCategories(prev => prev.map(c => c.id === id ? { ...c, name: trimmed } : c));
+  }, []);
+
+  const changeCategoryColor = useCallback((id: string, color: string) => {
+    setCategories(prev => prev.map(c => c.id === id ? { ...c, color } : c));
+  }, []);
+
+  const deleteCategory = useCallback((id: string) => {
+    const zonesUsing = images.reduce((sum, img) =>
+      sum + img.zones.filter(z => z.category === id).length, 0);
+    if (zonesUsing > 0) {
+      if (!confirm(`Категория используется в зонах (${zonesUsing} шт. на всех изображениях). Удалить категорию? Зоны тоже будут удалены.`)) {
+        return;
+      }
+      setImages(prev => prev.map(img => ({
+        ...img,
+        zones: img.zones.filter(z => z.category !== id)
+      })));
+    }
+    setCategories(prev => {
+      const filtered = prev.filter(c => c.id !== id);
+      const result = filtered.length > 0 ? filtered : DEFAULT_CATEGORIES;
+      if (activeCategory === id) {
+        setActiveCategory(result[0].id);
+      }
+      return result;
+    });
+  }, [images, activeCategory]);
 
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -166,53 +214,68 @@ function App() {
   const handleOpenProject = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     try {
       const text = await file.text();
       const project: ProjectFile = JSON.parse(text);
-      
+
       // Проверяем структуру проекта
       if (!project.images || !Array.isArray(project.images)) {
         throw new Error('Неверный формат файла: отсутствует массив images');
       }
-      
+
+      // Восстанавливаем пользовательские категории, если они сохранены в проекте
+      if (Array.isArray((project as any).categories) && (project as any).categories.length > 0) {
+        const cats: Category[] = (project as any).categories;
+        setCategories(cats);
+        setActiveCategory(prev => cats.some(c => c.id === prev) ? prev : cats[0].id);
+      }
+
       const loadedImages: ProjectImage[] = [];
-      
+
       // Загружаем все изображения
       for (const imgData of project.images) {
         try {
           const img = await loadImage(imgData.src);
+          // Миграция старых проектов: label -> roomNumber
+          const zones: Zone[] = (imgData.zones || []).map((z: any) => ({
+            id: z.id,
+            points: z.points,
+            category: z.category,
+            roomNumber: z.roomNumber ?? z.label ?? '',
+            area: typeof z.area === 'number' ? z.area : null,
+          }));
           loadedImages.push({
             id: imgData.id,
             name: imgData.name || 'Без имени',
             src: imgData.src,
             img,
-            canvasSize: { 
-              width: imgData.width || img.naturalWidth, 
-              height: imgData.height || img.naturalHeight 
+            canvasSize: {
+              width: imgData.width || img.naturalWidth,
+              height: imgData.height || img.naturalHeight
             },
-            zones: imgData.zones || []
+            zones
           });
         } catch (imgErr) {
           console.error(`Не удалось загрузить изображение: ${imgData.name}`, imgErr);
         }
       }
-      
+
       if (loadedImages.length === 0) {
         throw new Error('Не удалось загрузить ни одного изображения');
       }
-      
+
       // Определяем активное изображение
       const activeId = project.activeImageId && loadedImages.find(i => i.id === project.activeImageId)
         ? project.activeImageId
         : loadedImages[0].id;
-      
+
       // Устанавливаем состояние
       setImages(loadedImages);
       setActiveImageId(activeId);
       setSelectedZone(null);
       setCurrentPoints([]);
-      
+
       // Подгоняем масштаб после рендера
       setTimeout(() => {
         const activeImg = loadedImages.find(i => i.id === activeId);
@@ -220,13 +283,13 @@ function App() {
           fitToScreen(activeImg.canvasSize.width, activeImg.canvasSize.height);
         }
       }, 100);
-      
+
       console.log(`Проект загружен: ${loadedImages.length} изображений`);
     } catch (err) {
       console.error('Ошибка загрузки проекта:', err);
       alert('Ошибка загрузки проекта: ' + (err as Error).message);
     }
-    
+
     e.target.value = '';
   }, [fitToScreen]);
 
@@ -235,10 +298,12 @@ function App() {
     const data = {
       imageId: activeImage.id,
       imageName: activeImage.name,
+      categories: categories.map(c => ({ id: c.id, name: c.name, color: c.color })),
       zones: activeImage.zones.map(z => ({
         id: z.id,
-        label: z.label,
-        category: z.category,
+        roomNumber: z.roomNumber,
+        area: z.area,
+        category: categories.find(c => c.id === z.category)?.name || z.category,
         points: z.points
       }))
     };
@@ -249,17 +314,18 @@ function App() {
     a.download = `${activeImage.name}_zones.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [activeImage]);
+  }, [activeImage, categories]);
 
   const openSaveModal = useCallback(() => {
     setShowSaveModal(true);
   }, []);
 
   const getProjectData = useCallback(() => {
-    const project: ProjectFile = {
-      version: '1.0',
+    const project: ProjectFile & { categories?: Category[] } = {
+      version: '1.1',
       exportedAt: new Date().toISOString(),
       activeImageId: activeImageId || '',
+      categories,
       images: images.map(img => ({
         id: img.id,
         name: img.name,
@@ -270,24 +336,30 @@ function App() {
       }))
     };
     return JSON.stringify(project, null, 2);
-  }, [images, activeImageId]);
+  }, [images, activeImageId, categories]);
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
+      const digit = parseInt(e.key);
+      if (!isNaN(digit) && digit >= 1 && digit <= 9 && categories[digit - 1]) {
+        setActiveCategory(categories[digit - 1].id);
+        setMode('draw');
+        return;
+      }
+
       switch (e.key) {
-        case '1': case '2': case '3': case '4': case '5':
-          setActiveCategory(CATEGORIES[parseInt(e.key) - 1].id);
-          setMode('draw');
-          break;
         case 'd': case 'D': case 'в': case 'В':
           setMode('draw');
           break;
         case 'v': case 'V': case 'м': case 'М':
           setMode('select');
           setCurrentPoints([]);
+          break;
+        case 'l': case 'L': case 'д': case 'Д':
+          setShowLabels(prev => !prev);
           break;
         case 'Delete':
           if (selectedZone) {
@@ -306,7 +378,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedZone, deleteZone, activeImage, fitToScreen]);
+  }, [selectedZone, deleteZone, activeImage, fitToScreen, categories]);
 
   return (
     <div className="app">
@@ -326,6 +398,8 @@ function App() {
         exportZones={exportZones}
         clearAllZones={clearAllZones}
         images={images}
+        showLabels={showLabels}
+        setShowLabels={setShowLabels}
       />
 
       <div className="main-content">
@@ -342,20 +416,30 @@ function App() {
           startRename={startRename}
           setEditingName={setEditingName}
           deleteImage={deleteImage}
+          categories={categories}
           activeCategory={activeCategory}
           setActiveCategory={setActiveCategory}
+          addCategory={addCategory}
+          renameCategory={renameCategory}
+          changeCategoryColor={changeCategoryColor}
+          deleteCategory={deleteCategory}
           setMode={setMode}
           currentPoints={currentPoints}
           setCurrentPoints={setCurrentPoints}
           selectedZone={selectedZone}
           setSelectedZone={setSelectedZone}
           deleteZone={deleteZone}
+          updateZone={updateZone}
+          showLabels={showLabels}
+          setShowLabels={setShowLabels}
         />
 
         <Canvas
           image={activeImage}
           mode={mode}
           activeCategory={activeCategory}
+          categories={categories}
+          showLabels={showLabels}
           zoom={zoom}
           pan={pan}
           setZoom={setZoom}

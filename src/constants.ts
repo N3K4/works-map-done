@@ -1,11 +1,14 @@
 import { Category } from './types';
 
-export const CATEGORIES: Category[] = [
-  { id: 'floor', name: 'Пол', color: '#8B5CF6' },
-  { id: 'ceiling', name: 'Потолок', color: '#06B6D4' },
-  { id: 'walls', name: 'Стены', color: '#F59E0B' },
-  { id: 'partitions', name: 'Перегородки', color: '#10B981' },
-  { id: 'engineering', name: 'Инженерные системы', color: '#EF4444' },
+// Палитра цветов для новых категорий
+export const CATEGORY_COLORS: string[] = [
+  '#8B5CF6', '#06B6D4', '#F59E0B', '#10B981',
+  '#EF4444', '#3B82F6', '#EC4899', '#84CC16',
+];
+
+// Категории по умолчанию (пользователь может создавать свои)
+export const DEFAULT_CATEGORIES: Category[] = [
+  { id: 'default-1', name: 'Категория 1', color: CATEGORY_COLORS[0] },
 ];
 
 export const MIN_ZOOM = 0.1;

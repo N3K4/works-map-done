@@ -7,7 +7,10 @@ export interface Zone {
   id: string;
   points: Point[];
   category: string;
-  label: string;
+  /** Номер помещения (отображается как название зоны) */
+  roomNumber: string;
+  /** Площадь в квадратных метрах */
+  area: number | null;
 }
 
 export interface ProjectImage {

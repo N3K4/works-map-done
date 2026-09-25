@@ -715,3 +715,249 @@ canvas {
 ::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
 }
+
+/* ===== Category creation form ===== */
+.category-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  margin-bottom: 8px;
+  background: rgba(55, 65, 81, 0.4);
+  border-radius: 8px;
+}
+
+.category-form input[type="text"] {
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: #fff;
+  outline: none;
+}
+
+.category-form input[type="text"]:focus {
+  border-color: #60a5fa;
+}
+
+.color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.color-swatch.selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.6);
+}
+
+.color-picker-row input[type="color"] {
+  width: 24px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.btn-create-category {
+  background: #2563eb;
+  color: #fff;
+  font-size: 11px;
+  padding: 6px;
+  border-radius: 6px;
+}
+
+.btn-create-category:hover:not(:disabled) {
+  background: #3b82f6;
+}
+
+.btn-create-category:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Editable category item */
+.category-name-input {
+  font-size: 12px;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #fff;
+  padding: 2px 4px;
+  outline: none;
+}
+
+.category-name-input:hover {
+  border-color: #4b5563;
+}
+
+.category-name-input:focus {
+  background: #374151;
+  border-color: #60a5fa;
+}
+
+.category-color {
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.category-color:hover {
+  transform: scale(1.15);
+}
+
+.category-color-input {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #60a5fa;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.category-delete {
+  opacity: 0;
+  font-size: 10px;
+  padding: 2px;
+  background: transparent;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.category-item:hover .category-delete {
+  opacity: 1;
+}
+
+.category-delete:hover {
+  color: #f87171;
+}
+
+/* Zone fields: room number + area */
+.zone-fields {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zone-room-input {
+  width: 100%;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #fff;
+  padding: 2px 6px;
+  outline: none;
+}
+
+.zone-room-input:hover {
+  border-color: #4b5563;
+}
+
+.zone-room-input:focus {
+  background: #374151;
+  border-color: #60a5fa;
+}
+
+.zone-area-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.zone-area-input {
+  width: 70px;
+  font-size: 11px;
+  background: transparent;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  color: #d1d5db;
+  padding: 2px 6px;
+  outline: none;
+}
+
+.zone-area-input:focus {
+  background: #374151;
+  border-color: #60a5fa;
+  color: #fff;
+}
+
+.zone-area-unit {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.zone-auto-area {
+  font-size: 10px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.zone-item {
+  align-items: flex-start;
+}
+
+.zone-item .zone-color {
+  margin-top: 6px;
+}
+
+.zone-item .zone-delete {
+  margin-top: 4px;
+}
+
+/* Toggle label in sidebar title */
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #9ca3af;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-label input[type="checkbox"] {
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+/* Header labels toggle button */
+.btn-label-toggle {
+  background: rgba(55, 65, 81, 0.6);
+  color: #9ca3af;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.btn-label-toggle.active {
+  background: rgba(37, 99, 235, 0.3);
+  color: #93c5fd;
+  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.4);
+}
+
+.btn-label-toggle:hover {
+  color: #fff;
+}

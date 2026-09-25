@@ -28,6 +28,17 @@ export function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+// Площадь многоугольника (формула шнурового метода), в пикселях^2
+export function polygonArea(points: Point[]): number {
+  const n = points.length;
+  if (n < 3) return 0;
+  let area = 0;
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    area += (points[j].x + points[i].x) * (points[j].y - points[i].y);
+  }
+  return Math.abs(area / 2);
+}
+
 export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();

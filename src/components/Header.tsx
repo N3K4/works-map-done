@@ -16,6 +16,8 @@ interface HeaderProps {
   exportZones: () => void;
   clearAllZones: () => void;
   images: any[];
+  showLabels: boolean;
+  setShowLabels: (v: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -33,7 +35,9 @@ export const Header: React.FC<HeaderProps> = ({
   projectInputRef,
   exportZones,
   clearAllZones,
-  images
+  images,
+  showLabels,
+  setShowLabels
 }) => {
   return (
     <header>
@@ -71,6 +75,14 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="zoom-divider"></div>
               <button className="zoom-btn" onClick={() => activeImage && fitToScreen(activeImage.img.width, activeImage.img.height)}>⊡</button>
             </div>
+
+            <button
+              className={`btn-label-toggle ${showLabels ? 'active' : ''}`}
+              onClick={() => setShowLabels(!showLabels)}
+              title="Показать/скрыть названия зон на плане (L)"
+            >
+              {showLabels ? '🏷️ Названия: вкл' : '🏷️ Названия: выкл'}
+            </button>
 
             <button className="btn-purple" onClick={openSaveModal} disabled={images.length === 0}>
               📦 Сохранить
