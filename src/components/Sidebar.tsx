@@ -1,5 +1,7 @@
-import React from 'react';
-import { CATEGORIES } from '../constants';
+import React, { useState } from 'react';
+import { Category, Zone } from '../types';
+import { CATEGORY_COLORS } from '../constants';
+import { polygonArea } from '../utils/geometry';
 
 interface SidebarProps {
   images: any[];
@@ -14,15 +16,25 @@ interface SidebarProps {
   startRename: (id: string, name: string) => void;
   setEditingName: (v: string | null) => void;
   deleteImage: (id: string) => void;
+  categories: Category[];
   activeCategory: string;
   setActiveCategory: (c: string) => void;
+  addCategory: (name: string, color: string) => string;
+  renameCategory: (id: string, name: string) => void;
+  changeCategoryColor: (id: string, color: string) => void;
+  deleteCategory: (id: string) => void;
   setMode: (m: 'draw' | 'select') => void;
   currentPoints: any[];
   setCurrentPoints: (p: any[]) => void;
   selectedZone: string | null;
   setSelectedZone: (id: string | null) => void;
   deleteZone: (id: string) => void;
+  updateZone: (id: string, updates: Partial<Zone>) => void;
+  showLabels: boolean;
+  setShowLabels: (v: boolean) => void;
 }
+
+const formatArea = (px2: number): string => `${(px2 / 10000).toFixed(2)} м²`;
 
 export const Sidebar: React.FC<SidebarProps> = ({
   images,
@@ -37,15 +49,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
   startRename,
   setEditingName,
   deleteImage,
+  categories,
   activeCategory,
   setActiveCategory,
+  addCategory,
+  renameCategory,
+  changeCategoryColor,
+  deleteCategory,
   setMode,
   currentPoints,
   setCurrentPoints,
   selectedZone,
   setSelectedZone,
-  deleteZone
+  deleteZone,
+  updateZone,
+  showLabels,
+  setShowLabels
 }) => {
+  // Форма создания категории
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatColor, setNewCatColor] = useState(CATEGORY_COLORS[0]);
+  const [showCatForm, setShowCatForm] = useState(false);
+  // Категория, цвет которой редактируется inline
+  const [editingColorId, setEditingColorId] = useState<string | null>(null);
+
+  const handleCreateCategory = () => {
+    if (!newCatName.trim()) return;
+    addCategory(newCatName, newCatColor);
+    setNewCatName('');
+    setNewCatColor(CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length]);
+    setShowCatForm(false);
+  };
+
   return (
     <aside>
       {/* Секция: Изображения */}
@@ -57,8 +92,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="image-list">
           {images.length === 0 && <div className="empty-state">Нет загруженных изображений</div>}
           {images.map(img => (
-            <div 
-              key={img.id} 
+            <div
+              key={img.id}
               className={`image-item ${activeImageId === img.id ? 'active' : ''}`}
               onClick={() => switchImage(img.id)}
             >
@@ -67,23 +102,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <div className="image-info">
                 {editingName === img.id ? (
-                  <input 
-                    type="text" 
-                    value={tempName} 
-                    onChange={(e) => setTempName(e.target.value)} 
-                    onBlur={confirmRename} 
-                    onKeyDown={(e) => { 
-                      if (e.key === 'Enter') confirmRename(); 
-                      if (e.key === 'Escape') { setEditingName(null); setTempName(''); } 
-                      e.stopPropagation(); 
-                    }} 
-                    autoFocus 
-                    onClick={(e) => e.stopPropagation()} 
+                  <input
+                    type="text"
+                    value={tempName}
+                    onChange={(e) => setTempName(e.target.value)}
+                    onBlur={confirmRename}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') confirmRename();
+                      if (e.key === 'Escape') { setEditingName(null); setTempName(''); }
+                      e.stopPropagation();
+                    }}
+                    autoFocus
+                    onClick={(e) => e.stopPropagation()}
                   />
                 ) : (
                   <div className="image-name">
                     <span>{img.name}</span>
-                    <button 
+                    <button
                       className="rename-btn"
                       onClick={(e) => { e.stopPropagation(); startRename(img.id, img.name); }}
                     >
@@ -93,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
                 <div className="image-zones-count">{img.zones.length} обл.</div>
               </div>
-              <button 
+              <button
                 className="delete-btn"
                 onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }}
               >
@@ -104,50 +139,162 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Секция: Категории */}
+      {/* Секция: Категории (создаются пользователем) */}
       <div className="sidebar-section">
-        <div className="sidebar-title">Категории</div>
+        <div className="sidebar-title">
+          <span>Категории ({categories.length})</span>
+          <button onClick={() => setShowCatForm(v => !v)}>
+            {showCatForm ? 'Отмена' : '+ Создать'}
+          </button>
+        </div>
+
+        {showCatForm && (
+          <div className="category-form">
+            <input
+              type="text"
+              placeholder="Название категории"
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleCreateCategory(); }}
+              autoFocus
+            />
+            <div className="color-picker-row">
+              {CATEGORY_COLORS.map(c => (
+                <button
+                  key={c}
+                  className={`color-swatch ${newCatColor === c ? 'selected' : ''}`}
+                  style={{ backgroundColor: c }}
+                  onClick={() => setNewCatColor(c)}
+                  title={c}
+                />
+              ))}
+              <input
+                type="color"
+                value={newCatColor}
+                onChange={(e) => setNewCatColor(e.target.value)}
+                title="Свой цвет"
+              />
+            </div>
+            <button className="btn-create-category" onClick={handleCreateCategory} disabled={!newCatName.trim()}>
+              Создать категорию
+            </button>
+          </div>
+        )}
+
         <div className="category-list">
-          {CATEGORIES.map((cat, index) => (
-            <button 
-              key={cat.id} 
+          {categories.map((cat, index) => (
+            <div
+              key={cat.id}
               className={`category-item ${activeCategory === cat.id ? 'active' : ''}`}
-              onClick={() => { 
-                setActiveCategory(cat.id); 
-                setMode('draw'); 
-                if (currentPoints.length > 0) setCurrentPoints([]); 
+              onClick={() => {
+                setActiveCategory(cat.id);
+                setMode('draw');
+                if (currentPoints.length > 0) setCurrentPoints([]);
               }}
             >
-              <div className="category-color" style={{ backgroundColor: cat.color }}></div>
-              <div className="category-name">{cat.name}</div>
-              <div className="category-shortcut">{index + 1}</div>
+              {editingColorId === cat.id ? (
+                <input
+                  type="color"
+                  value={cat.color}
+                  onChange={(e) => changeCategoryColor(cat.id, e.target.value)}
+                  onBlur={() => setEditingColorId(null)}
+                  onClick={(e) => e.stopPropagation()}
+                  autoFocus
+                  className="category-color-input"
+                />
+              ) : (
+                <div
+                  className="category-color"
+                  style={{ backgroundColor: cat.color }}
+                  title="Нажмите, чтобы изменить цвет"
+                  onClick={(e) => { e.stopPropagation(); setEditingColorId(cat.id); }}
+                ></div>
+              )}
+              <input
+                className="category-name-input"
+                value={cat.name}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => renameCategory(cat.id, e.target.value)}
+                title="Название категории"
+              />
+              <div className="category-shortcut">{index + 1 <= 9 ? index + 1 : ''}</div>
               <div className="category-count">
                 {activeImage ? activeImage.zones.filter((z: any) => z.category === cat.id).length : 0}
               </div>
-            </button>
+              <button
+                className="category-delete"
+                title="Удалить категорию"
+                onClick={(e) => { e.stopPropagation(); deleteCategory(cat.id); }}
+              >
+                ✕
+              </button>
+            </div>
           ))}
+          {categories.length === 0 && (
+            <div className="empty-state">Создайте категорию</div>
+          )}
         </div>
       </div>
 
       {/* Секция: Области */}
       <div className="zones-list">
-        <div className="sidebar-title">Области ({activeImage ? activeImage.zones.length : 0})</div>
+        <div className="sidebar-title">
+          <span>Области ({activeImage ? activeImage.zones.length : 0})</span>
+          <label className="toggle-label" title="Показывать/скрывать подписи зон на плане (L)">
+            <input
+              type="checkbox"
+              checked={showLabels}
+              onChange={(e) => setShowLabels(e.target.checked)}
+            />
+            <span>Названия</span>
+          </label>
+        </div>
         {!activeImage ? (
           <div className="empty-state">Загрузите изображение</div>
         ) : activeImage.zones.length === 0 ? (
           <div className="empty-state">Нет выделенных областей</div>
         ) : (
-          activeImage.zones.map((zone: any) => {
-            const cat = CATEGORIES.find(c => c.id === zone.category);
+          activeImage.zones.map((zone: Zone) => {
+            const cat = categories.find(c => c.id === zone.category);
+            const pxArea = polygonArea(zone.points);
             return (
-              <div 
-                key={zone.id} 
+              <div
+                key={zone.id}
                 className={`zone-item ${selectedZone === zone.id ? 'selected' : ''}`}
                 onClick={() => { setSelectedZone(zone.id); setMode('select'); }}
               >
                 <div className="zone-color" style={{ backgroundColor: cat?.color }}></div>
-                <div className="zone-label">{zone.label}</div>
-                <button 
+                <div className="zone-fields">
+                  <input
+                    className="zone-room-input"
+                    type="text"
+                    placeholder="№ помещения"
+                    value={zone.roomNumber}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => updateZone(zone.id, { roomNumber: e.target.value })}
+                    title="Номер помещения (название зоны)"
+                  />
+                  <div className="zone-area-row" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      className="zone-area-input"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Площадь"
+                      value={zone.area ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        updateZone(zone.id, { area: v === '' ? null : Math.max(0, parseFloat(v)) });
+                      }}
+                      title="Площадь зоны, м²"
+                    />
+                    <span className="zone-area-unit">м²</span>
+                    <span className="zone-auto-area" title="Площадь в пикселях плана (без масштаба)">
+                      ≈{formatArea(pxArea)}
+                    </span>
+                  </div>
+                </div>
+                <button
                   className="zone-delete"
                   onClick={(e) => { e.stopPropagation(); deleteZone(zone.id); }}
                 >
@@ -169,7 +316,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div><kbd>Колесо</kbd> — масштаб</div>
           <div><kbd>Space+перетаскивание</kbd> — панорама</div>
           <div><kbd>D/V</kbd> — режим</div>
-          <div><kbd>1-5</kbd> — категория</div>
+          <div><kbd>1-9</kbd> — категория</div>
+          <div><kbd>L</kbd> — показ названий зон</div>
         </div>
       </div>
     </aside>
