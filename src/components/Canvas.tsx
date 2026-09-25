@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { Point, Zone, ProjectImage, Mode, Category } from '../types';
 import { CLOSE_RADIUS, DRAG_THRESHOLD } from '../constants';
 import { pointInPolygon, distance, hexToRgba } from '../utils/geometry';
+import { drawZones } from '../utils/render';
 
 interface CanvasProps {
   image: ProjectImage | null;
@@ -9,6 +10,7 @@ interface CanvasProps {
   activeCategory: string;
   categories: Category[];
   showLabels: boolean;
+  labelScale: number;
   zoom: number;
   pan: { x: number; y: number };
   setZoom: (z: number) => void;
@@ -25,7 +27,7 @@ interface CanvasProps {
 }
 
 export const Canvas: React.FC<CanvasProps> = ({
-  image, mode, activeCategory, categories, showLabels, zoom, pan, setZoom, setPan,
+  image, mode, activeCategory, categories, showLabels, labelScale, zoom, pan, setZoom, setPan,
   onAddZone, selectedZone, setSelectedZone, containerRef,
   currentPoints, setCurrentPoints, onUploadClick, onOpenClick, images
 }) => {
@@ -80,55 +82,23 @@ export const Canvas: React.FC<CanvasProps> = ({
     // Draw image
     ctx.drawImage(image.img, 0, 0);
 
-    // Draw zones
-    image.zones.forEach(zone => {
-      const cat = categories.find(c => c.id === zone.category);
-      const color = cat?.color || '#666';
-      const isSelected = zone.id === selectedZone;
-      const fillAlpha = isSelected ? 0.55 : 0.3;
-      const lineWidth = isSelected ? 3 : 1.5;
-
-      ctx.beginPath();
-      zone.points.forEach((p, i) => {
-        if (i === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      });
-      ctx.closePath();
-
-      ctx.fillStyle = hexToRgba(color, fillAlpha);
-      ctx.fill();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth / zoom;
-      ctx.stroke();
-
-      if (showLabels && zone.points.length > 0) {
-        const cx = zone.points.reduce((s, p) => s + p.x, 0) / zone.points.length;
-        const cy = zone.points.reduce((s, p) => s + p.y, 0) / zone.points.length;
-        // Название зоны = номер помещения; при наличии — площадь второй строкой
-        const lines: string[] = [];
-        if (zone.roomNumber) lines.push(zone.roomNumber);
-        if (zone.area != null) lines.push(`${zone.area} м²`);
-        if (lines.length > 0) {
-          ctx.font = `${14 / zoom}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-          ctx.lineWidth = 3 / zoom;
-          const lineHeight = 18 / zoom;
-          const startY = cy - ((lines.length - 1) * lineHeight) / 2;
-          lines.forEach((line, li) => {
-            ctx.strokeText(line, cx, startY + li * lineHeight);
-            ctx.fillStyle = 'white';
-            ctx.fillText(line, cx, startY + li * lineHeight);
-          });
-        }
-      }
+    // Draw zones (общий рендерер — тот же, что используется при экспорте в PNG)
+    ctx.save();
+    ctx.scale(zoom, zoom); // линии и подписи держим CONSTANTными в экранных пикселях
+    drawZones(ctx, image.zones, categories, {
+      labelScale,
+      showLabels,
+      selectedZone,
     });
+    ctx.restore();
 
     // Draw current drawing
     if (currentPoints.length > 0) {
       const cat = categories.find(c => c.id === activeCategory);
       const color = cat?.color || '#666';
+
+      ctx.save();
+      ctx.scale(zoom, zoom); // точки/линии постоянные в экранных пикселях
 
       ctx.beginPath();
       currentPoints.forEach((p, i) => {
@@ -145,21 +115,21 @@ export const Canvas: React.FC<CanvasProps> = ({
       }
 
       ctx.strokeStyle = color;
-      ctx.lineWidth = 2 / zoom;
-      ctx.setLineDash([8 / zoom, 4 / zoom]);
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 4]);
       ctx.stroke();
       ctx.setLineDash([]);
 
       currentPoints.forEach((p, i) => {
         const isFirst = i === 0;
-        const radius = isFirst ? 8 / zoom : 5 / zoom;
+        const radius = isFirst ? 8 : 5;
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
         ctx.fillStyle = isFirst ? '#fff' : color;
         ctx.fill();
         ctx.strokeStyle = color;
-        ctx.lineWidth = 2 / zoom;
+        ctx.lineWidth = 2;
         ctx.stroke();
       });
 
@@ -167,14 +137,16 @@ export const Canvas: React.FC<CanvasProps> = ({
         const dist = distance(mousePos, currentPoints[0]);
         if (dist < CLOSE_RADIUS / zoom) {
           ctx.beginPath();
-          ctx.arc(currentPoints[0].x, currentPoints[0].y, 12 / zoom, 0, Math.PI * 2);
+          ctx.arc(currentPoints[0].x, currentPoints[0].y, 12, 0, Math.PI * 2);
           ctx.strokeStyle = '#fff';
-          ctx.lineWidth = 2 / zoom;
+          ctx.lineWidth = 2;
           ctx.stroke();
         }
       }
+
+      ctx.restore();
     }
-  }, [image, currentPoints, mousePos, selectedZone, zoom, activeCategory, categories, showLabels]);
+  }, [image, currentPoints, mousePos, selectedZone, zoom, activeCategory, categories, showLabels, labelScale]);
 
   // Wheel zoom
   useEffect(() => {

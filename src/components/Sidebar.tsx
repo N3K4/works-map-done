@@ -32,6 +32,11 @@ interface SidebarProps {
   updateZone: (id: string, updates: Partial<Zone>) => void;
   showLabels: boolean;
   setShowLabels: (v: boolean) => void;
+  labelScale: number;
+  setLabelScale: (v: number) => void;
+  openExportModal: () => void;
+  exportPng: (scale?: number) => Promise<void>;
+  exportZones: () => void;
 }
 
 const formatArea = (px2: number): string => `${(px2 / 10000).toFixed(2)} м²`;
@@ -64,7 +69,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   deleteZone,
   updateZone,
   showLabels,
-  setShowLabels
+  setShowLabels,
+  labelScale,
+  setLabelScale,
+  openExportModal,
+  exportPng,
+  exportZones
 }) => {
   // Форма создания категории
   const [newCatName, setNewCatName] = useState('');
@@ -264,6 +274,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => { setSelectedZone(zone.id); setMode('select'); }}
               >
                 <div className="zone-color" style={{ backgroundColor: cat?.color }}></div>
+                <select
+                  className="zone-category-select"
+                  value={zone.category}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => updateZone(zone.id, { category: e.target.value })}
+                  title="Категория зоны"
+                >
+                  {cat === undefined && (
+                    <option value={zone.category}>Без категории</option>
+                  )}
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
                 <div className="zone-fields">
                   <input
                     className="zone-room-input"
@@ -304,6 +328,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
             );
           })
         )}
+      </div>
+
+      {/* Секция: Экспорт и подписи */}
+      <div className="sidebar-section">
+        <div className="sidebar-title">
+          <span>Экспорт и подписи</span>
+        </div>
+        <div className="label-scale-row" title="Размер названий (номеров помещений) и площадей на плане и в PNG">
+          <span className="label-scale-name">Масштаб подписей</span>
+          <input
+            type="range"
+            min={0.5}
+            max={4}
+            step={0.05}
+            value={labelScale}
+            onChange={(e) => setLabelScale(parseFloat(e.target.value))}
+          />
+          <span className="label-scale-value">×{labelScale.toFixed(2)}</span>
+        </div>
+        <div className="export-btn-row">
+          <button className="btn-success" onClick={openExportModal} disabled={!activeImage || activeImage.zones.length === 0}>
+            📤 Экспорт…
+          </button>
+          <button className="btn-indigo" onClick={() => exportPng()} disabled={!activeImage || activeImage.zones.length === 0} title="PNG в нативном разрешении изображения">
+            🖼️ PNG
+          </button>
+          <button className="btn-secondary" onClick={exportZones} disabled={!activeImage || activeImage.zones.length === 0} title="Экспорт зон в JSON">
+            💾 JSON
+          </button>
+        </div>
       </div>
 
       {/* Секция: Управление */}

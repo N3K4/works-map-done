@@ -13,7 +13,7 @@ interface HeaderProps {
   fitToScreen: (w: number, h: number) => void;
   openSaveModal: () => void;
   projectInputRef: React.RefObject<HTMLInputElement>;
-  exportZones: () => void;
+  openExportModal: () => void;
   clearAllZones: () => void;
   images: any[];
   showLabels: boolean;
@@ -33,7 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   fitToScreen,
   openSaveModal,
   projectInputRef,
-  exportZones,
+  openExportModal,
   clearAllZones,
   images,
   showLabels,
@@ -93,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {activeImage.zones.length > 0 && (
               <>
-                <button className="btn-success" onClick={exportZones}>
+                <button className="btn-success" onClick={openExportModal} title="Экспорт в PNG / JSON, настройка масштаба подписей">
                   💾 Экспорт
                 </button>
                 <button className="btn-danger" onClick={clearAllZones}>
