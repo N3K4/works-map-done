@@ -49,20 +49,14 @@ export const Canvas: React.FC<CanvasProps> = ({
   }, [zoom, pan]);
 
   const screenToCanvas = useCallback((sx: number, sy: number): Point => {
-    const container = containerRef.current;
-    if (!container) return { x: 0, y: 0 };
-    // Получаем viewport (main element) - родитель контейнера
-    const viewport = container.parentElement;
-    if (!viewport) return { x: 0, y: 0 };
-    const viewportRect = viewport.getBoundingClientRect();
-    // Координаты относительно viewport
-    const relX = sx - viewportRect.left;
-    const relY = sy - viewportRect.top;
-    // Преобразуем в координаты canvas
-    const x = (relX - pan.x) / zoom;
-    const y = (relY - pan.y) / zoom;
-    return { x, y };
-  }, [zoom, pan, containerRef]);
+    // Надёжное преобразование через фактический прямоугольник canvas на экране:
+    // getBoundingClientRect() учитывает CSS transform scale(zoom) контейнера,
+    // поэтому точки рисования попадают точно под курсор при любом зуме/пане.
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return { x: (sx - rect.left) / zoom, y: (sy - rect.top) / zoom };
+  }, [zoom]);
 
   // Draw canvas
   useEffect(() => {
@@ -72,8 +66,10 @@ export const Canvas: React.FC<CanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = image.canvasSize.width;
-    canvas.height = image.canvasSize.height;
+    // Размер задаём только при изменении (присваивание width очищает канвас —
+    // при каждом тике зума это вызывало мерцание «прыгающего» рисования)
+    if (canvas.width !== image.canvasSize.width) canvas.width = image.canvasSize.width;
+    if (canvas.height !== image.canvasSize.height) canvas.height = image.canvasSize.height;
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
@@ -82,15 +78,17 @@ export const Canvas: React.FC<CanvasProps> = ({
     // Draw image
     ctx.drawImage(image.img, 0, 0);
 
-    // Draw zones (общий рендерер — тот же, что используется при экспорте в PNG)
-    ctx.save();
-    ctx.scale(zoom, zoom); // линии и подписи держим CONSTANTными в экранных пикселях
+    // Draw zones (общий рендерер — тот же, что используется при экспорте в PNG).
+    // ВАЖНО: зоны рисуются в координатах ПЛАНА без ctx.scale(zoom):
+    // CSS transform: scale(zoom) на контейнере сам масштабирует канвас.
+    // Масштабирование только через CSS исключает рассинхрон трансформаций
+    // (прыжки зума и «прыгающее» отображение рисования зон).
     drawZones(ctx, image.zones, categories, {
       labelScale,
       showLabels,
       selectedZone,
+      zoom,
     });
-    ctx.restore();
 
     // Draw current drawing
     if (currentPoints.length > 0) {
@@ -98,7 +96,6 @@ export const Canvas: React.FC<CanvasProps> = ({
       const color = cat?.color || '#666';
 
       ctx.save();
-      ctx.scale(zoom, zoom); // точки/линии постоянные в экранных пикселях
 
       ctx.beginPath();
       currentPoints.forEach((p, i) => {
@@ -114,22 +111,24 @@ export const Canvas: React.FC<CanvasProps> = ({
         }
       }
 
+      // Толщины/радиусы делим на zoom — визуально остаются постоянными
+      // в экранных пикселях после CSS-масштабирования контейнера.
       ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([8, 4]);
+      ctx.lineWidth = 2 / zoom;
+      ctx.setLineDash([8 / zoom, 4 / zoom]);
       ctx.stroke();
       ctx.setLineDash([]);
 
       currentPoints.forEach((p, i) => {
         const isFirst = i === 0;
-        const radius = isFirst ? 8 : 5;
+        const radius = (isFirst ? 8 : 5) / zoom;
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
         ctx.fillStyle = isFirst ? '#fff' : color;
         ctx.fill();
         ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2 / zoom;
         ctx.stroke();
       });
 
@@ -137,9 +136,9 @@ export const Canvas: React.FC<CanvasProps> = ({
         const dist = distance(mousePos, currentPoints[0]);
         if (dist < CLOSE_RADIUS / zoom) {
           ctx.beginPath();
-          ctx.arc(currentPoints[0].x, currentPoints[0].y, 12, 0, Math.PI * 2);
+          ctx.arc(currentPoints[0].x, currentPoints[0].y, 12 / zoom, 0, Math.PI * 2);
           ctx.strokeStyle = '#fff';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 2 / zoom;
           ctx.stroke();
         }
       }
@@ -150,42 +149,49 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Wheel zoom
   useEffect(() => {
-    // Находим main элемент
-    const mainElement = document.querySelector('main');
-    if (!mainElement) return;
-
+    // Вешаем на window с passive:false: listener живёт всё время, что смонтирован
+    // Canvas (canvas-container появляется только при загруженном изображении —
+    // навешивание на ref в ранний момент было источником «зум не работает»).
     const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      // Координаты мыши относительно main
-      const mainRect = mainElement.getBoundingClientRect();
-      const mouseX = e.clientX - mainRect.left;
-      const mouseY = e.clientY - mainRect.top;
+      const el = containerRef.current;
+      if (!el || !image) return;
+      // Зумим только когда курсор над рабочей областью (main)
+      const main = el.parentElement;
+      if (!main) return;
+      const mr = main.getBoundingClientRect();
+      if (e.clientX < mr.left || e.clientX > mr.right || e.clientY < mr.top || e.clientY > mr.bottom) return;
 
-      // Используем актуальные значения из refs
+      e.preventDefault();
+
+      // Точка фиксации — курсор. pan живёт в системе координат main
+      // (canvas-container позиционируется left/top = pan внутри main).
+      const mouseX = e.clientX - mr.left;
+      const mouseY = e.clientY - mr.top;
+
       const currentZoom = zoomRef.current;
       const currentPan = panRef.current;
 
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
       const newZoom = Math.max(0.1, Math.min(10, currentZoom * delta));
-      const scale = newZoom / currentZoom;
-      
-      // Пересчитываем pan так, чтобы точка под курсором оставалась на месте
-      const newPanX = mouseX - scale * (mouseX - currentPan.x);
-      const newPanY = mouseY - scale * (mouseY - currentPan.y);
-      
-      // Обновляем state
+      const k = newZoom / currentZoom;
+
+      // Пересчёт pan по формуле transform-origin: 0 0:
+      // screen = pan + zoom * plan  =>  pan' = mouse - k * (mouse - pan)
+      // Точка под курсором остаётся на месте — нет скачков назад/вперёд.
+      const newPanX = mouseX - k * (mouseX - currentPan.x);
+      const newPanY = mouseY - k * (mouseY - currentPan.y);
+
       setZoom(newZoom);
       setPan({ x: newPanX, y: newPanY });
-      
-      // Обновляем refs сразу
+
+      // Обновляем refs сразу, чтобы следующий тик колеса не использовал устаревшие значения
       zoomRef.current = newZoom;
       panRef.current = { x: newPanX, y: newPanY };
     };
 
-    // Добавляем listener на main
-    mainElement.addEventListener('wheel', handleWheel, { passive: false });
-    return () => mainElement.removeEventListener('wheel', handleWheel);
-  }, [setZoom, setPan]);
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [containerRef, setZoom, setPan, image]);
 
   useEffect(() => {
     setCurrentPoints([]);

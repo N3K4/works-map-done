@@ -9,6 +9,12 @@ export interface RenderZonesOptions {
   labelScale: number;
   showLabels: boolean;
   selectedZone?: string | null;
+  /**
+   * Текущий зум экрана. Если задан (>0), толщины линий и размер подписей
+   * делятся на него, чтобы визуально оставаться постоянными в экранных
+   * пикселях после CSS transform: scale(zoom). Для экспорта в PNG не задаётся.
+   */
+  zoom?: number;
 }
 
 export function drawZones(
@@ -18,6 +24,7 @@ export function drawZones(
   opts: RenderZonesOptions
 ) {
   const { labelScale, showLabels, selectedZone } = opts;
+  const k = opts.zoom && opts.zoom > 0 ? 1 / opts.zoom : 1; // экранные px -> px плана
 
   zones.forEach(zone => {
     if (!zone.points || zone.points.length < 3) return;
@@ -36,7 +43,7 @@ export function drawZones(
     ctx.fillStyle = hexToRgba(color, isSelected ? 0.55 : 0.3);
     ctx.fill();
     ctx.strokeStyle = color;
-    ctx.lineWidth = isSelected ? 3 : 1.5;
+    ctx.lineWidth = (isSelected ? 3 : 1.5) * k;
     ctx.stroke();
 
     if (showLabels) {
@@ -47,12 +54,12 @@ export function drawZones(
       if (zone.roomNumber) lines.push(zone.roomNumber);
       if (zone.area != null) lines.push(`${zone.area} м²`);
       if (lines.length > 0) {
-        const fontSize = BASE_LABEL_FONT * labelScale;
+        const fontSize = BASE_LABEL_FONT * labelScale * k;
         ctx.font = `${fontSize}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-        ctx.lineWidth = Math.max(2, fontSize / 5);
+        ctx.lineWidth = Math.max(2 * k, fontSize / 5);
         const lineHeight = fontSize * 1.3;
         const startY = cy - ((lines.length - 1) * lineHeight) / 2;
         lines.forEach((line, li) => {
