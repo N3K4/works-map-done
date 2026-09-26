@@ -33,6 +33,8 @@ export interface ProjectFile {
   showLabels?: boolean;
   /** Какие данные показывать в подписях зон */
   labelToggles?: LabelToggles;
+  /** Коэффициент пересчёта площади пикселей плана в м² (вводится вручную в шапке) */
+  areaCoefficient?: number;
   images: {
     id: string;
     name: string;
