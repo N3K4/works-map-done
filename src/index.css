@@ -473,6 +473,69 @@ aside {
   color: #f87171;
 }
 
+/* Панель поиска/сортировки областей */
+.zone-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px 8px;
+  position: sticky;
+  top: 0;
+}
+
+.zone-search {
+  flex: 1;
+  min-width: 0;
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  color: #e5e7eb;
+  font-size: 12px;
+  padding: 6px 8px;
+}
+
+.zone-search:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.zone-search::placeholder {
+  color: #4b5563;
+}
+
+.zone-search-clear {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  font-size: 11px;
+  padding: 2px 4px;
+}
+
+.zone-search-clear:hover {
+  color: #f87171;
+}
+
+.zone-sort-btn {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  color: #9ca3af;
+  font-size: 11px;
+  padding: 5px 8px;
+  white-space: nowrap;
+}
+
+.zone-sort-btn:hover {
+  border-color: #6366f1;
+  color: #e5e7eb;
+}
+
+.zone-sort-btn.active {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: #6366f1;
+  color: #c7d2fe;
+}
+
 /* Instructions */
 .instructions {
   padding: 12px;
