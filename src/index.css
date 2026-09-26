@@ -209,9 +209,12 @@ button:disabled {
   overflow: hidden;
 }
 
-/* Sidebar: три секции — Изображения ~20%, Категории ~25%, Области ~55%.
-   Каждая секция занимает фиксированную долю высоты и скроллится внутри себя,
-   поэтому ни одна секция не перекрывает соседние. */
+/* Sidebar: три пропорциональные секции — Изображения 20%, Категории 25%, Области 55%.
+   Высота aside жёстко ограничена (max-height: 100%), а у секций заданы
+   базовые размеры через calc() в процентах от неё. В flex-расчёте
+   "flex-grow basis 0" игнорирует проценты при переполнении контента,
+   поэтому используются именно percent-basis + flex-grow/shrink —
+   доли сохраняются всегда, а скролл происходит внутри списков каждой секции. */
 aside {
   width: 256px;
   background: rgba(31, 41, 55, 0.95);
@@ -219,6 +222,8 @@ aside {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  height: 100%;
+  max-height: 100%;
   overflow: hidden;
   z-index: 10;
 }
@@ -233,26 +238,33 @@ aside {
 }
 
 .section-images {
-  flex: 20 1 0;
+  flex: 1 1 20%;
+  min-height: 64px; /* заголовок + одна строка списка */
+  padding-bottom: 4px;
 }
 
 .section-categories {
-  flex: 25 1 0;
+  flex: 1 1 25%;
+  min-height: 76px; /* заголовок + одна категория */
+  padding-bottom: 4px;
 }
 
 .section-zones {
-  flex: 55 1 0;
+  flex: 1 1 55%;
+  min-height: 96px; /* заголовок + поиск + одна зона */
   border-bottom: none;
 }
 
-.section-export,
-.instructions {
-  flex-shrink: 0;
+.section-export {
+  flex: 0 0 auto;
 }
 
 .instructions {
+  flex: 0 1 auto;
   overflow-y: auto;
-  max-height: 30%;
+  max-height: 22%;
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 transparent;
 }
 
 .sidebar-title {
@@ -470,7 +482,7 @@ aside {
   text-align: center;
 }
 
-/* Zones List — скролл внутри своей секции */
+/* Zones List — внутренний скролл секции «Области» */
 .zones-list {
   flex: 1 1 auto;
   min-height: 0;
@@ -478,7 +490,6 @@ aside {
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: #4b5563 transparent;
-  padding: 12px;
 }
 
 .zone-item {
@@ -847,6 +858,7 @@ canvas {
   margin-bottom: 8px;
   background: rgba(55, 65, 81, 0.4);
   border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .category-form input[type="text"] {
