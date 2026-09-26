@@ -29,6 +29,10 @@ export interface ProjectFile {
   categories?: Category[];
   /** Множитель размера подписей (номер помещения / площадь) на плане и в PNG */
   labelScale?: number;
+  /** Показывать ли подписи зон */
+  showLabels?: boolean;
+  /** Какие данные показывать в подписях зон */
+  labelToggles?: LabelToggles;
   images: {
     id: string;
     name: string;
@@ -40,6 +44,16 @@ export interface ProjectFile {
 }
 
 export type Mode = 'draw' | 'select';
+
+/** Что показывать в подписях зон на плане (и в PNG-экспорте) */
+export interface LabelToggles {
+  /** Номер помещения (название зоны) */
+  name: boolean;
+  /** Площадь в м² */
+  area: boolean;
+  /** Название категории */
+  category: boolean;
+}
 
 export interface Category {
   id: string;

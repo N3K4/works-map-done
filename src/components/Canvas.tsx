@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { Point, Zone, ProjectImage, Mode, Category } from '../types';
+import { Point, Zone, ProjectImage, Mode, Category, LabelToggles } from '../types';
 import { CLOSE_RADIUS, DRAG_THRESHOLD } from '../constants';
 import { pointInPolygon, distance, hexToRgba } from '../utils/geometry';
 import { drawZones } from '../utils/render';
@@ -10,6 +10,7 @@ interface CanvasProps {
   activeCategory: string;
   categories: Category[];
   showLabels: boolean;
+  labelToggles?: LabelToggles;
   labelScale: number;
   zoom: number;
   pan: { x: number; y: number };
@@ -27,7 +28,7 @@ interface CanvasProps {
 }
 
 export const Canvas: React.FC<CanvasProps> = ({
-  image, mode, activeCategory, categories, showLabels, labelScale, zoom, pan, setZoom, setPan,
+  image, mode, activeCategory, categories, showLabels, labelToggles, labelScale, zoom, pan, setZoom, setPan,
   onAddZone, selectedZone, setSelectedZone, containerRef,
   currentPoints, setCurrentPoints, onUploadClick, onOpenClick, images
 }) => {
@@ -86,6 +87,7 @@ export const Canvas: React.FC<CanvasProps> = ({
     drawZones(ctx, image.zones, categories, {
       labelScale,
       showLabels,
+      labelToggles,
       selectedZone,
       zoom,
     });
@@ -145,7 +147,7 @@ export const Canvas: React.FC<CanvasProps> = ({
 
       ctx.restore();
     }
-  }, [image, currentPoints, mousePos, selectedZone, zoom, activeCategory, categories, showLabels, labelScale]);
+  }, [image, currentPoints, mousePos, selectedZone, zoom, activeCategory, categories, showLabels, labelToggles, labelScale]);
 
   // Wheel zoom
   useEffect(() => {
