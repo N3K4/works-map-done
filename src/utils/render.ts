@@ -48,6 +48,7 @@ export function drawZones(
   zones.forEach(zone => {
     if (!zone.points || zone.points.length < 3) return;
     const cat = categories.find(c => c.id === zone.category);
+    const hidden = !!cat?.hidden;
     const color = cat?.color || '#666';
     const isSelected = zone.id === selectedZone;
 
@@ -57,6 +58,16 @@ export function drawZones(
       else ctx.lineTo(p.x, p.y);
     });
     ctx.closePath();
+
+    // Зоны скрытой категории: без заливки и подписей — только тонкий пунктирный контур
+    if (hidden && !isSelected) {
+      ctx.setLineDash([6 * k, 4 * k]);
+      ctx.strokeStyle = 'rgba(120,120,120,0.5)';
+      ctx.lineWidth = 1.5 * k;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      return;
+    }
 
     ctx.setLineDash([]);
     ctx.fillStyle = hexToRgba(color, isSelected ? 0.55 : 0.3);
@@ -78,7 +89,7 @@ export function drawZones(
       ctx.fill();
     }
 
-    if (showLabels) {
+    if (showLabels && !hidden) {
       const cx = zone.points.reduce((s, p) => s + p.x, 0) / zone.points.length;
       const cy = zone.points.reduce((s, p) => s + p.y, 0) / zone.points.length;
       // Состав подписи настраивается: название / площадь / категория

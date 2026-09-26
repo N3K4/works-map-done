@@ -983,6 +983,77 @@ canvas {
   color: #f87171;
 }
 
+/* Перемещение категорий в списке (порядок меняется только вручную) */
+.category-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.category-item:hover .category-reorder {
+  opacity: 1;
+}
+
+.cat-arrow {
+  padding: 0 3px;
+  font-size: 9px;
+  line-height: 1.2;
+  background: transparent;
+  color: #6b7280;
+  border: none;
+  cursor: pointer;
+}
+
+.cat-arrow:hover:not(:disabled) {
+  color: #d1d5db;
+}
+
+.cat-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Показать/скрыть категорию */
+.cat-visibility {
+  font-size: 11px;
+  padding: 2px;
+  background: transparent;
+  color: #9ca3af;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.category-item:hover .cat-visibility,
+.cat-visibility.off {
+  opacity: 1;
+}
+
+.cat-visibility:hover {
+  color: #e5e7eb;
+}
+
+.cat-visibility.off {
+  color: #6b7280;
+}
+
+/* Скрытая категория — приглушённый вид */
+.category-item.hidden-cat {
+  opacity: 0.45;
+}
+
+.category-item.hidden-cat .category-color {
+  filter: grayscale(0.8);
+}
+
+.category-item.hidden-cat .category-name-input {
+  text-decoration: line-through;
+  color: #6b7280;
+}
+
 /* Zone fields: room number + area */
 .zone-fields {
   flex: 1;

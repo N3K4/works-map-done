@@ -215,6 +215,24 @@ function App() {
     setCategories(prev => prev.map(c => c.id === id ? { ...c, color } : c));
   }, []);
 
+  /** Показать/скрыть категорию: скрытые категории не отображаются на плане */
+  const toggleCategoryHidden = useCallback((id: string) => {
+    setCategories(prev => prev.map(c => c.id === id ? { ...c, hidden: !c.hidden } : c));
+  }, []);
+
+  /** Переместить категорию в списке (↑/↓). Порядок списка меняется явно —
+   *  смена категории у зоны порядок НЕ затрагивает. */
+  const moveCategory = useCallback((id: string, dir: -1 | 1) => {
+    setCategories(prev => {
+      const from = prev.findIndex(c => c.id === id);
+      const to = from + dir;
+      if (from < 0 || to < 0 || to >= prev.length) return prev;
+      const next = [...prev];
+      [next[from], next[to]] = [next[to], next[from]];
+      return next;
+    });
+  }, []);
+
   const deleteCategory = useCallback((id: string) => {
     const zonesUsing = images.reduce((sum, img) =>
       sum + img.zones.filter(z => z.category === id).length, 0);
@@ -231,11 +249,21 @@ function App() {
       const filtered = prev.filter(c => c.id !== id);
       const result = filtered.length > 0 ? filtered : DEFAULT_CATEGORIES;
       if (activeCategory === id) {
-        setActiveCategory(result[0].id);
+        const firstVisible = result.find(c => !c.hidden) || result[0];
+        setActiveCategory(firstVisible.id);
       }
       return result;
     });
   }, [images, activeCategory]);
+
+  /** Если активная категория скрыта — переключаем на первую видимую */
+  useEffect(() => {
+    const cur = categories.find(c => c.id === activeCategory);
+    if (cur?.hidden) {
+      const firstVisible = categories.find(c => !c.hidden);
+      if (firstVisible) setActiveCategory(firstVisible.id);
+    }
+  }, [categories, activeCategory]);
 
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -422,7 +450,7 @@ function App() {
 
   const getProjectData = useCallback(() => {
     const project: ProjectFile = {
-      version: '1.3',
+      version: '1.4',
       exportedAt: new Date().toISOString(),
       activeImageId: activeImageId || '',
       categories,
@@ -448,8 +476,11 @@ function App() {
 
       const digit = parseInt(e.key);
       if (!isNaN(digit) && digit >= 1 && digit <= 9 && categories[digit - 1]) {
-        setActiveCategory(categories[digit - 1].id);
-        setMode('draw');
+        // Горячие клавиши 1–9 привязаны к порядку списка; скрытые категории пропускаются
+        if (!categories[digit - 1].hidden) {
+          setActiveCategory(categories[digit - 1].id);
+          setMode('draw');
+        }
         return;
       }
 
@@ -526,6 +557,8 @@ function App() {
           renameCategory={renameCategory}
           changeCategoryColor={changeCategoryColor}
           deleteCategory={deleteCategory}
+          toggleCategoryHidden={toggleCategoryHidden}
+          moveCategory={moveCategory}
           setMode={setMode}
           currentPoints={currentPoints}
           setCurrentPoints={setCurrentPoints}

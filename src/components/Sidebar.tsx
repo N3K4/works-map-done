@@ -23,6 +23,8 @@ interface SidebarProps {
   renameCategory: (id: string, name: string) => void;
   changeCategoryColor: (id: string, color: string) => void;
   deleteCategory: (id: string) => void;
+  toggleCategoryHidden: (id: string) => void;
+  moveCategory: (id: string, dir: -1 | 1) => void;
   setMode: (m: 'draw' | 'select') => void;
   currentPoints: any[];
   setCurrentPoints: (p: any[]) => void;
@@ -77,6 +79,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   renameCategory,
   changeCategoryColor,
   deleteCategory,
+  toggleCategoryHidden,
+  moveCategory,
   setMode,
   currentPoints,
   setCurrentPoints,
@@ -242,13 +246,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {categories.map((cat, index) => (
             <div
               key={cat.id}
-              className={`category-item ${activeCategory === cat.id ? 'active' : ''}`}
+              className={`category-item ${activeCategory === cat.id ? 'active' : ''} ${cat.hidden ? 'hidden-cat' : ''}`}
               onClick={() => {
+                if (cat.hidden) return; // скрытую категорию нельзя выбрать для рисования
                 setActiveCategory(cat.id);
                 setMode('draw');
                 if (currentPoints.length > 0) setCurrentPoints([]);
               }}
             >
+              {/* Перемещение по списку: порядок меняется только вручную стрелками */}
+              <div className="category-reorder">
+                <button
+                  className="cat-arrow"
+                  title="Выше в списке"
+                  disabled={index === 0}
+                  onClick={(e) => { e.stopPropagation(); moveCategory(cat.id, -1); }}
+                >↑</button>
+                <button
+                  className="cat-arrow"
+                  title="Ниже в списке"
+                  disabled={index === categories.length - 1}
+                  onClick={(e) => { e.stopPropagation(); moveCategory(cat.id, 1); }}
+                >↓</button>
+              </div>
               {editingColorId === cat.id ? (
                 <input
                   type="color"
@@ -278,6 +298,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="category-count">
                 {activeImage ? activeImage.zones.filter((z: any) => z.category === cat.id).length : 0}
               </div>
+              <button
+                className={`cat-visibility ${cat.hidden ? 'off' : ''}`}
+                title={cat.hidden ? 'Показать категорию' : 'Скрыть категорию'}
+                onClick={(e) => { e.stopPropagation(); toggleCategoryHidden(cat.id); }}
+              >
+                {cat.hidden ? '🚫' : '👁'}
+              </button>
               <button
                 className="category-delete"
                 title="Удалить категорию"
