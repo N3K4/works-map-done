@@ -293,8 +293,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Секция: Области */}
-      <div className="sidebar-section zones-list section-zones">
+      {/* Секция: Области (заголовок и тулбар фиксированы, скроллится только список зон) */}
+      <div className="sidebar-section section-zones">
         <div className="sidebar-title">
           <span>Области ({rawZones.length})</span>
           <div className="label-settings" ref={labelSettingsRef}>
@@ -380,7 +380,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {visibleZones.length === 0 ? (
               <div className="empty-state">Ничего не найдено по запросу «{zoneSearch.trim()}»</div>
             ) : (
-              visibleZones.map((zone: Zone) => {
+            <div className="zones-list">
+              {visibleZones.map((zone: Zone) => {
             const cat = categories.find(c => c.id === zone.category);
             const pxArea = polygonArea(zone.points);
             return (
@@ -442,7 +443,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
             );
-              })
+              })}
+            </div>
             )}
           </>
         )}
