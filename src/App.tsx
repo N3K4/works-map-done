@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ProjectImage, Zone, Mode, ProjectFile, Point, Category, LabelToggles } from './types';
 import { DEFAULT_CATEGORIES, MIN_ZOOM, MAX_ZOOM } from './constants';
-import { loadImage, generateId } from './utils/geometry';
+import { loadImage, generateId, polygonCentroid } from './utils/geometry';
 import { renderPngBlob, downloadBlob } from './utils/render';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -135,6 +135,58 @@ function App() {
         : img
     ));
   }, [activeImageId]);
+
+  // Плавная анимация фокуса вида на зоне
+  const focusAnimRef = useRef<number | null>(null);
+
+  /** Фокусировка вида на зоне: центрирует её в видимой области плана.
+   *  Зум не меняем — только панорамирование, чтобы вид «не прыгал» при кликах. */
+  const focusOnZone = useCallback((zoneId: string) => {
+    if (!activeImage) return;
+    const zone = activeImage.zones.find(z => z.id === zoneId);
+    if (!zone || zone.points.length < 3) return;
+
+    const mainElement = document.querySelector('main');
+    if (!mainElement) return;
+    const cw = mainElement.clientWidth;
+    const ch = mainElement.clientHeight;
+    if (cw === 0 || ch === 0) return;
+
+    // Центр масс полигона — для вытянутых L-образных зон надёжнее bounding box
+    const c = polygonCentroid(zone.points);
+    const targetPan = { x: cw / 2 - c.x * zoom, y: ch / 2 - c.y * zoom };
+
+    // Если цель почти совпадает с текущим видом — ничего не делаем
+    if (Math.abs(targetPan.x - pan.x) < 1 && Math.abs(targetPan.y - pan.y) < 1) {
+      return;
+    }
+
+    // Плавная анимация ~250 мс (ease-out cubic)
+    if (focusAnimRef.current !== null) cancelAnimationFrame(focusAnimRef.current);
+    const startPan = { ...pan };
+    const duration = 250;
+    const startTime = performance.now();
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const step = (now: number) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      const k = easeOut(t);
+      setPan({
+        x: startPan.x + (targetPan.x - startPan.x) * k,
+        y: startPan.y + (targetPan.y - startPan.y) * k,
+      });
+      if (t < 1) {
+        focusAnimRef.current = requestAnimationFrame(step);
+      } else {
+        focusAnimRef.current = null;
+      }
+    };
+    focusAnimRef.current = requestAnimationFrame(step);
+  }, [activeImage, zoom, pan]);
+
+  useEffect(() => () => {
+    if (focusAnimRef.current !== null) cancelAnimationFrame(focusAnimRef.current);
+  }, []);
 
   const clearAllZones = useCallback(() => {
     if (!activeImageId) return;
@@ -478,7 +530,7 @@ function App() {
           currentPoints={currentPoints}
           setCurrentPoints={setCurrentPoints}
           selectedZone={selectedZone}
-          setSelectedZone={setSelectedZone}
+          setSelectedZone={(id) => { setSelectedZone(id); if (id) focusOnZone(id); }}
           deleteZone={deleteZone}
           updateZone={updateZone}
           showLabels={showLabels}

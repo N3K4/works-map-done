@@ -36,8 +36,36 @@ export const Canvas: React.FC<CanvasProps> = ({
   const [mousePos, setMousePos] = useState<Point | null>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [spacePressed, setSpacePressed] = useState(false);
+  /** Метка последнего выбора зоны — включает пульсацию подсветки на канвасе */
+  const [selectionTime, setSelectionTime] = useState(0);
   const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const mouseDownPosRef = useRef<Point | null>(null);
+
+  // Реагируем на смену выбранной зоны (из списка сайдбара или кликом по плану)
+  const prevSelectedRef = useRef(selectedZone);
+  useEffect(() => {
+    if (selectedZone !== prevSelectedRef.current) {
+      prevSelectedRef.current = selectedZone;
+      if (selectedZone) setSelectionTime(performance.now());
+    }
+  }, [selectedZone]);
+
+  // Пока активна пульсация свежевыбранной зоны — перерисовываем канвас каждый кадр.
+  // setMousePos(mp => mp) не сработает (React пропускает одинаковые ссылки),
+  // поэтому используется отдельный счётчик кадров, входящий в deps эффекта отрисовки.
+  const [flashFrame, setFlashFrame] = useState(0);
+  useEffect(() => {
+    if (!selectedZone || !selectionTime) return;
+    let raf = 0;
+    const loop = () => {
+      if (performance.now() - selectionTime < 800) {
+        setFlashFrame(f => f + 1);
+        raf = requestAnimationFrame(loop);
+      }
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [selectedZone, selectionTime]);
   
   // Refs для хранения актуальных значений zoom и pan
   const zoomRef = useRef(zoom);
@@ -89,6 +117,7 @@ export const Canvas: React.FC<CanvasProps> = ({
       showLabels,
       labelToggles,
       selectedZone,
+      selectionTime: selectionTime || undefined,
       zoom,
     });
 
@@ -147,7 +176,7 @@ export const Canvas: React.FC<CanvasProps> = ({
 
       ctx.restore();
     }
-  }, [image, currentPoints, mousePos, selectedZone, zoom, activeCategory, categories, showLabels, labelToggles, labelScale]);
+  }, [image, currentPoints, mousePos, selectedZone, zoom, activeCategory, categories, showLabels, labelToggles, labelScale, selectionTime, flashFrame]);
 
   // Wheel zoom
   useEffect(() => {

@@ -39,6 +39,27 @@ export function polygonArea(points: Point[]): number {
   return Math.abs(area / 2);
 }
 
+// Центр масс (центроид) полигона — используется для фокусировки вида на зоне
+export function polygonCentroid(points: Point[]): Point {
+  const n = points.length;
+  if (n === 0) return { x: 0, y: 0 };
+  let twiceArea = 0, cx = 0, cy = 0;
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const cross = points[j].x * points[i].y - points[i].x * points[j].y;
+    twiceArea += cross;
+    cx += (points[j].x + points[i].x) * cross;
+    cy += (points[j].y + points[i].y) * cross;
+  }
+  if (Math.abs(twiceArea) < 1e-9) {
+    // Вырожденный полигон (точки на одной линии) — среднее арифметическое
+    return {
+      x: points.reduce((s, p) => s + p.x, 0) / n,
+      y: points.reduce((s, p) => s + p.y, 0) / n,
+    };
+  }
+  return { x: cx / (3 * twiceArea), y: cy / (3 * twiceArea) };
+}
+
 export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
