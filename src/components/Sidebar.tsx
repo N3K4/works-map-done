@@ -41,6 +41,20 @@ interface SidebarProps {
 
 const formatArea = (px2: number): string => `${(px2 / 10000).toFixed(2)} м²`;
 
+// Естественное сравнение номеров помещений: "5" < "10", "А-12" < "А-100"
+const naturalCompare = (a: string, b: string): number => {
+  const an = a.trim();
+  const bn = b.trim();
+  if (!an && !bn) return 0;
+  if (!an) return 1; // без имени — в конец
+  if (!bn) return -1;
+  try {
+    return an.localeCompare(bn, 'ru', { numeric: true, sensitivity: 'base' });
+  } catch {
+    return an < bn ? -1 : an > bn ? 1 : 0;
+  }
+};
+
 export const Sidebar: React.FC<SidebarProps> = ({
   images,
   activeImageId,
@@ -82,6 +96,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [showCatForm, setShowCatForm] = useState(false);
   // Категория, цвет которой редактируется inline
   const [editingColorId, setEditingColorId] = useState<string | null>(null);
+  // Поиск и сортировка списка областей
+  const [zoneSearch, setZoneSearch] = useState('');
+  const [sortByName, setSortByName] = useState(false);
 
   const handleCreateCategory = () => {
     if (!newCatName.trim()) return;
@@ -90,6 +107,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setNewCatColor(CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length]);
     setShowCatForm(false);
   };
+
+  const rawZones: Zone[] = activeImage?.zones ?? [];
+  const query = zoneSearch.trim().toLowerCase();
+  let visibleZones = query
+    ? rawZones.filter((z) => (z.roomNumber ?? '').toLowerCase().includes(query))
+    : rawZones.slice();
+  if (sortByName) {
+    visibleZones.sort((a, b) => naturalCompare(a.roomNumber ?? '', b.roomNumber ?? ''));
+  }
 
   return (
     <aside>
@@ -249,7 +275,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Секция: Области */}
       <div className="zones-list">
         <div className="sidebar-title">
-          <span>Области ({activeImage ? activeImage.zones.length : 0})</span>
+          <span>Области ({rawZones.length})</span>
           <label className="toggle-label" title="Показывать/скрывать подписи зон на плане (L)">
             <input
               type="checkbox"
@@ -261,10 +287,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         {!activeImage ? (
           <div className="empty-state">Загрузите изображение</div>
-        ) : activeImage.zones.length === 0 ? (
+        ) : rawZones.length === 0 ? (
           <div className="empty-state">Нет выделенных областей</div>
         ) : (
-          activeImage.zones.map((zone: Zone) => {
+          <>
+            <div className="zone-toolbar">
+              <input
+                className="zone-search"
+                type="text"
+                placeholder="🔍 Поиск по имени…"
+                value={zoneSearch}
+                onChange={(e) => setZoneSearch(e.target.value)}
+              />
+              {zoneSearch && (
+                <button
+                  className="zone-search-clear"
+                  onClick={() => setZoneSearch('')}
+                  title="Очистить поиск"
+                >
+                  ✕
+                </button>
+              )}
+              <button
+                className={`zone-sort-btn ${sortByName ? 'active' : ''}`}
+                onClick={() => setSortByName((v) => !v)}
+                title={sortByName ? 'Сортировка по имени включена — выключить' : 'Сортировать по имени'}
+              >
+                {sortByName ? 'А↔1 ↓' : 'А↔1'}
+              </button>
+            </div>
+            {visibleZones.length === 0 ? (
+              <div className="empty-state">Ничего не найдено по запросу «{zoneSearch.trim()}»</div>
+            ) : (
+              visibleZones.map((zone: Zone) => {
             const cat = categories.find(c => c.id === zone.category);
             const pxArea = polygonArea(zone.points);
             return (
@@ -326,7 +381,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
             );
-          })
+              })
+            )}
+          </>
         )}
       </div>
 
