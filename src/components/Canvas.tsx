@@ -49,13 +49,20 @@ export const Canvas: React.FC<CanvasProps> = ({
   }, [zoom, pan]);
 
   const screenToCanvas = useCallback((sx: number, sy: number): Point => {
-    // Надёжное преобразование: берём фактический прямоугольник canvas на экране
-    // (учитывает CSS transform scale и позицию контейнера) и делим на zoom.
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-    return { x: (sx - rect.left) / zoom, y: (sy - rect.top) / zoom };
-  }, [zoom]);
+    const container = containerRef.current;
+    if (!container) return { x: 0, y: 0 };
+    // Получаем viewport (main element) - родитель контейнера
+    const viewport = container.parentElement;
+    if (!viewport) return { x: 0, y: 0 };
+    const viewportRect = viewport.getBoundingClientRect();
+    // Координаты относительно viewport
+    const relX = sx - viewportRect.left;
+    const relY = sy - viewportRect.top;
+    // Преобразуем в координаты canvas
+    const x = (relX - pan.x) / zoom;
+    const y = (relY - pan.y) / zoom;
+    return { x, y };
+  }, [zoom, pan, containerRef]);
 
   // Draw canvas
   useEffect(() => {
@@ -143,41 +150,42 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Wheel zoom
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+    // Находим main элемент
+    const mainElement = document.querySelector('main');
+    if (!mainElement) return;
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
+      // Координаты мыши относительно main
+      const mainRect = mainElement.getBoundingClientRect();
+      const mouseX = e.clientX - mainRect.left;
+      const mouseY = e.clientY - mainRect.top;
 
-      // Точка фиксации — центр canvas на экране.
-      // Контейнер трансформируется как scale(zoom) с left/top = pan, поэтому
-      // при зуме фиксированная точка должна оставаться на месте:
-      // pan' = C - k * (C - pan), где k = newZoom / oldZoom.
-      const rect = el.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-
+      // Используем актуальные значения из refs
       const currentZoom = zoomRef.current;
       const currentPan = panRef.current;
 
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
       const newZoom = Math.max(0.1, Math.min(10, currentZoom * delta));
-      const k = newZoom / currentZoom;
-
-      const newPanX = cx - k * (cx - currentPan.x);
-      const newPanY = cy - k * (cy - currentPan.y);
-
+      const scale = newZoom / currentZoom;
+      
+      // Пересчитываем pan так, чтобы точка под курсором оставалась на месте
+      const newPanX = mouseX - scale * (mouseX - currentPan.x);
+      const newPanY = mouseY - scale * (mouseY - currentPan.y);
+      
+      // Обновляем state
       setZoom(newZoom);
       setPan({ x: newPanX, y: newPanY });
-
+      
       // Обновляем refs сразу
       zoomRef.current = newZoom;
       panRef.current = { x: newPanX, y: newPanY };
     };
 
-    el.addEventListener('wheel', handleWheel, { passive: false });
-    return () => el.removeEventListener('wheel', handleWheel);
-  }, [containerRef, setZoom, setPan]);
+    // Добавляем listener на main
+    mainElement.addEventListener('wheel', handleWheel, { passive: false });
+    return () => mainElement.removeEventListener('wheel', handleWheel);
+  }, [setZoom, setPan]);
 
   useEffect(() => {
     setCurrentPoints([]);
