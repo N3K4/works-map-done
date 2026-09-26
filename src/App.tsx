@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ProjectImage, Zone, Mode, ProjectFile, Point, Category } from './types';
+import { ProjectImage, Zone, Mode, ProjectFile, Point, Category, LabelToggles } from './types';
 import { DEFAULT_CATEGORIES, MIN_ZOOM, MAX_ZOOM } from './constants';
 import { loadImage, generateId } from './utils/geometry';
 import { renderPngBlob, downloadBlob } from './utils/render';
@@ -16,6 +16,8 @@ function App() {
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [activeCategory, setActiveCategory] = useState(categories[0].id);
   const [showLabels, setShowLabels] = useState(true);
+  /** Что показывать в подписях зон: название / площадь / категорию */
+  const [labelToggles, setLabelToggles] = useState<LabelToggles>({ name: true, area: true, category: true });
   /** Множитель размера названий и площадей (настраивается в меню экспорта) */
   const [labelScale, setLabelScale] = useState(1);
   const [zoom, setZoom] = useState(1);
@@ -241,6 +243,19 @@ function App() {
         setLabelScale(Math.min(4, Math.max(0.5, (project as any).labelScale)));
       }
 
+      // Восстанавливаем настройки отображения подписей
+      if (typeof (project as any).showLabels === 'boolean') {
+        setShowLabels((project as any).showLabels);
+      }
+      const lt = (project as any).labelToggles;
+      if (lt && typeof lt === 'object') {
+        setLabelToggles({
+          name: typeof lt.name === 'boolean' ? lt.name : true,
+          area: typeof lt.area === 'boolean' ? lt.area : true,
+          category: typeof lt.category === 'boolean' ? lt.category : true,
+        });
+      }
+
       const loadedImages: ProjectImage[] = [];
 
       // Загружаем все изображения
@@ -334,6 +349,7 @@ function App() {
         categories,
         labelScale,
         showLabels,
+        labelToggles,
         scale,
       });
       const suffix = scale > 1 ? `@${scale}x` : '';
@@ -342,7 +358,7 @@ function App() {
       console.error('Ошибка экспорта PNG:', err);
       alert('Не удалось экспортировать PNG: ' + (err as Error).message);
     }
-  }, [activeImage, categories, labelScale, showLabels]);
+  }, [activeImage, categories, labelScale, showLabels, labelToggles]);
 
   const openSaveModal = useCallback(() => {
     setShowSaveModal(true);
@@ -354,11 +370,13 @@ function App() {
 
   const getProjectData = useCallback(() => {
     const project: ProjectFile = {
-      version: '1.2',
+      version: '1.3',
       exportedAt: new Date().toISOString(),
       activeImageId: activeImageId || '',
       categories,
       labelScale,
+      showLabels,
+      labelToggles,
       images: images.map(img => ({
         id: img.id,
         name: img.name,
@@ -369,7 +387,7 @@ function App() {
       }))
     };
     return JSON.stringify(project, null, 2);
-  }, [images, activeImageId, categories, labelScale]);
+  }, [images, activeImageId, categories, labelScale, showLabels, labelToggles]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -465,6 +483,8 @@ function App() {
           updateZone={updateZone}
           showLabels={showLabels}
           setShowLabels={setShowLabels}
+          labelToggles={labelToggles}
+          setLabelToggles={setLabelToggles}
           labelScale={labelScale}
           setLabelScale={setLabelScale}
           openExportModal={openExportModal}
@@ -478,6 +498,7 @@ function App() {
           activeCategory={activeCategory}
           categories={categories}
           showLabels={showLabels}
+          labelToggles={labelToggles}
           labelScale={labelScale}
           zoom={zoom}
           pan={pan}
@@ -529,6 +550,8 @@ function App() {
         labelScale={labelScale}
         setLabelScale={setLabelScale}
         showLabels={showLabels}
+        labelToggles={labelToggles}
+        setLabelToggles={setLabelToggles}
         exportZones={exportZones}
       />
     </div>

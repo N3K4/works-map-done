@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { renderPngBlob, downloadBlob, drawZones } from '../utils/render';
-import { ProjectImage, Category } from '../types';
+import { ProjectImage, Category, LabelToggles } from '../types';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -10,13 +10,15 @@ interface ExportModalProps {
   labelScale: number;
   setLabelScale: (v: number) => void;
   showLabels: boolean;
+  labelToggles: LabelToggles;
+  setLabelToggles: (v: LabelToggles) => void;
   exportZones: () => void;
 }
 
 const RES_OPTIONS = [1, 2, 3] as const;
 
 export const ExportModal: React.FC<ExportModalProps> = ({
-  isOpen, onClose, activeImage, categories, labelScale, setLabelScale, showLabels, exportZones,
+  isOpen, onClose, activeImage, categories, labelScale, setLabelScale, showLabels, labelToggles, setLabelToggles, exportZones,
 }) => {
   const [resolution, setResolution] = useState<number>(2);
   const [busy, setBusy] = useState(false);
@@ -55,6 +57,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       drawZones(ctx, scaledZones, categories, {
         labelScale: labelScale * scale,
         showLabels,
+        labelToggles,
       });
       ctx.restore();
     };
@@ -64,7 +67,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     image.src = activeImage.src;
 
     return () => { cancelled = true; };
-  }, [isOpen, activeImage, categories, labelScale, showLabels, resolution]);
+  }, [isOpen, activeImage, categories, labelScale, showLabels, labelToggles, resolution]);
 
   if (!isOpen || !activeImage) return null;
 
@@ -82,6 +85,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         categories,
         labelScale,
         showLabels,
+        labelToggles,
         scale: resolution,
       });
       const suffix = resolution > 1 ? `@${resolution}x` : '';
@@ -125,6 +129,39 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             />
             <div className="export-setting-range-hints">
               <span>×0.5</span><span>×4</span>
+            </div>
+          </div>
+
+          {/* Что показывать в подписях зон */}
+          <div className="export-setting">
+            <div className="export-setting-label">
+              <span>Данные в подписях зон</span>
+            </div>
+            <div className="export-toggles-row">
+              <label className="toggle-label" title="Показывать номер помещения (название зоны)">
+                <input
+                  type="checkbox"
+                  checked={labelToggles.name}
+                  onChange={(e) => setLabelToggles({ ...labelToggles, name: e.target.checked })}
+                />
+                <span>Название</span>
+              </label>
+              <label className="toggle-label" title="Показывать площадь в м²">
+                <input
+                  type="checkbox"
+                  checked={labelToggles.area}
+                  onChange={(e) => setLabelToggles({ ...labelToggles, area: e.target.checked })}
+                />
+                <span>Площадь</span>
+              </label>
+              <label className="toggle-label" title="Показывать название категории">
+                <input
+                  type="checkbox"
+                  checked={labelToggles.category}
+                  onChange={(e) => setLabelToggles({ ...labelToggles, category: e.target.checked })}
+                />
+                <span>Категория</span>
+              </label>
             </div>
           </div>
 

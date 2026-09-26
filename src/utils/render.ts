@@ -1,13 +1,18 @@
-import { Point, Zone, Category } from '../types';
+import { Point, Zone, Category, LabelToggles } from '../types';
 import { hexToRgba } from './geometry';
 
 /** Базовый размер шрифта подписей (px в координатах плана), умножается на labelScale */
 export const BASE_LABEL_FONT = 14;
 
+/** По умолчанию показываем всё: название, площадь и категорию */
+export const DEFAULT_LABEL_TOGGLES: LabelToggles = { name: true, area: true, category: true };
+
 export interface RenderZonesOptions {
   /** Множитель размера названий и площадей (настраивается в меню импорта/экспорта) */
   labelScale: number;
   showLabels: boolean;
+  /** Какие данные показывать в подписях зон */
+  labelToggles?: LabelToggles;
   selectedZone?: string | null;
   /**
    * Текущий зум экрана. Если задан (>0), толщины линий и размер подписей
@@ -24,6 +29,7 @@ export function drawZones(
   opts: RenderZonesOptions
 ) {
   const { labelScale, showLabels, selectedZone } = opts;
+  const toggles = opts.labelToggles ?? DEFAULT_LABEL_TOGGLES;
   const k = opts.zoom && opts.zoom > 0 ? 1 / opts.zoom : 1; // экранные px -> px плана
 
   zones.forEach(zone => {
@@ -42,17 +48,23 @@ export function drawZones(
     ctx.setLineDash([]);
     ctx.fillStyle = hexToRgba(color, isSelected ? 0.55 : 0.3);
     ctx.fill();
+    // Более выраженные границы зон: тёмная обводка под цветной линией + жирная цветная линия
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+    ctx.lineWidth = (isSelected ? 6 : 4.5) * k;
+    ctx.stroke();
     ctx.strokeStyle = color;
-    ctx.lineWidth = (isSelected ? 3 : 1.5) * k;
+    ctx.lineWidth = (isSelected ? 3.5 : 2.5) * k;
     ctx.stroke();
 
     if (showLabels) {
       const cx = zone.points.reduce((s, p) => s + p.x, 0) / zone.points.length;
       const cy = zone.points.reduce((s, p) => s + p.y, 0) / zone.points.length;
-      // Название зоны = номер помещения; при наличии — площадь второй строкой
+      // Состав подписи настраивается: название / площадь / категория
       const lines: string[] = [];
-      if (zone.roomNumber) lines.push(zone.roomNumber);
-      if (zone.area != null) lines.push(`${zone.area} м²`);
+      if (toggles.name && zone.roomNumber) lines.push(zone.roomNumber);
+      if (toggles.area && zone.area != null) lines.push(`${zone.area} м²`);
+      if (toggles.category && cat?.name) lines.push(cat.name);
       if (lines.length > 0) {
         const fontSize = BASE_LABEL_FONT * labelScale * k;
         ctx.font = `${fontSize}px sans-serif`;
@@ -100,6 +112,7 @@ export async function renderPngBlob(params: {
   categories: Category[];
   labelScale: number;
   showLabels: boolean;
+  labelToggles?: LabelToggles;
   scale?: number;
 }): Promise<Blob> {
   const { img, width, height, zones, categories, showLabels } = params;
@@ -127,6 +140,7 @@ export async function renderPngBlob(params: {
   drawZones(ctx, scaledZones, categories, {
     labelScale: params.labelScale * scale,
     showLabels,
+    labelToggles: params.labelToggles,
   });
   ctx.restore();
 

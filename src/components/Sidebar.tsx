@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Category, Zone } from '../types';
+import React, { useState, useRef, useEffect } from 'react';
+import { Category, Zone, LabelToggles } from '../types';
 import { CATEGORY_COLORS } from '../constants';
 import { polygonArea } from '../utils/geometry';
 
@@ -32,6 +32,8 @@ interface SidebarProps {
   updateZone: (id: string, updates: Partial<Zone>) => void;
   showLabels: boolean;
   setShowLabels: (v: boolean) => void;
+  labelToggles: LabelToggles;
+  setLabelToggles: (v: LabelToggles) => void;
   labelScale: number;
   setLabelScale: (v: number) => void;
   openExportModal: () => void;
@@ -84,12 +86,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
   updateZone,
   showLabels,
   setShowLabels,
+  labelToggles,
+  setLabelToggles,
   labelScale,
   setLabelScale,
   openExportModal,
   exportPng,
   exportZones
 }) => {
+  // Выпадашка настроек подписей зон
+  const [labelSettingsOpen, setLabelSettingsOpen] = useState(false);
+  const labelSettingsRef = useRef<HTMLDivElement>(null);
+  const allTogglesOn = labelToggles.name && labelToggles.area && labelToggles.category;
+  const activeToggleCount = [labelToggles.name, labelToggles.area, labelToggles.category].filter(Boolean).length;
+
+  useEffect(() => {
+    if (!labelSettingsOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (labelSettingsRef.current && !labelSettingsRef.current.contains(e.target as Node)) {
+        setLabelSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [labelSettingsOpen]);
+
   // Форма создания категории
   const [newCatName, setNewCatName] = useState('');
   const [newCatColor, setNewCatColor] = useState(CATEGORY_COLORS[0]);
@@ -276,14 +297,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="zones-list">
         <div className="sidebar-title">
           <span>Области ({rawZones.length})</span>
-          <label className="toggle-label" title="Показывать/скрывать подписи зон на плане (L)">
-            <input
-              type="checkbox"
-              checked={showLabels}
-              onChange={(e) => setShowLabels(e.target.checked)}
-            />
-            <span>Названия</span>
-          </label>
+          <div className="label-settings" ref={labelSettingsRef}>
+            <button
+              className={`label-settings-btn ${!showLabels || !allTogglesOn ? 'warn' : ''}`}
+              onClick={() => setLabelSettingsOpen(v => !v)}
+              title="Какие данные показывать в подписях зон на плане"
+            >
+              🏷️ Подписи {showLabels ? (allTogglesOn ? '' : `(${activeToggleCount})`) : ': выкл'} ▾
+            </button>
+            {labelSettingsOpen && (
+              <div className="label-settings-dropdown">
+                <label className="toggle-label" title="Показывать/скрывать все подписи зон на плане (L)">
+                  <input
+                    type="checkbox"
+                    checked={showLabels}
+                    onChange={(e) => setShowLabels(e.target.checked)}
+                  />
+                  <span>Подписи на плане</span>
+                </label>
+                <div className="label-settings-divider" />
+                <div className="label-settings-subtitle">Данные в подписях:</div>
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={labelToggles.name}
+                    onChange={(e) => setLabelToggles({ ...labelToggles, name: e.target.checked })}
+                  />
+                  <span>Название (№ помещения)</span>
+                </label>
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={labelToggles.area}
+                    onChange={(e) => setLabelToggles({ ...labelToggles, area: e.target.checked })}
+                  />
+                  <span>Площадь, м²</span>
+                </label>
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={labelToggles.category}
+                    onChange={(e) => setLabelToggles({ ...labelToggles, category: e.target.checked })}
+                  />
+                  <span>Категория</span>
+                </label>
+                <div className="label-settings-hint">Эти же настройки влияют на PNG-экспорт</div>
+              </div>
+            )}
+          </div>
         </div>
         {!activeImage ? (
           <div className="empty-state">Загрузите изображение</div>
