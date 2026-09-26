@@ -18,6 +18,8 @@ interface HeaderProps {
   images: any[];
   showLabels: boolean;
   setShowLabels: (v: boolean) => void;
+  areaCoefficient: number;
+  setAreaCoefficient: (v: number) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -37,7 +39,9 @@ export const Header: React.FC<HeaderProps> = ({
   clearAllZones,
   images,
   showLabels,
-  setShowLabels
+  setShowLabels,
+  areaCoefficient,
+  setAreaCoefficient
 }) => {
   return (
     <header>
@@ -83,6 +87,23 @@ export const Header: React.FC<HeaderProps> = ({
             >
               {showLabels ? '🏷️ Названия: вкл' : '🏷️ Названия: выкл'}
             </button>
+
+            <label
+              className="area-coefficient"
+              title="Коэффициент пересчёта площади пикселей плана в м²: примерная площадь зоны = площадь в px² × коэффициент². Вводится вручную."
+            >
+              <span className="area-coefficient-label">Коэф. м²/px:</span>
+              <input
+                type="number"
+                min="0"
+                step="0.001"
+                value={areaCoefficient}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setAreaCoefficient(Number.isFinite(v) && v >= 0 ? v : 0);
+                }}
+              />
+            </label>
 
             <button className="btn-purple" onClick={openSaveModal} disabled={images.length === 0}>
               📦 Сохранить

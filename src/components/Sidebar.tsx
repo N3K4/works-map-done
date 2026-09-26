@@ -38,12 +38,16 @@ interface SidebarProps {
   setLabelToggles: (v: LabelToggles) => void;
   labelScale: number;
   setLabelScale: (v: number) => void;
+  /** Коэффициент пересчёта площади пикселей плана в м² (задаётся вручную в шапке) */
+  areaCoefficient: number;
   openExportModal: () => void;
   exportPng: (scale?: number) => Promise<void>;
   exportZones: () => void;
 }
 
-const formatArea = (px2: number): string => `${(px2 / 10000).toFixed(2)} м²`;
+/** Примерная площадь зоны в м²: площадь полигона в px² × квадрат коэффициента */
+const estimateAreaM2 = (px2: number, coefficient: number): string =>
+  `${(px2 * coefficient * coefficient).toFixed(2)} м²`;
 
 // Естественное сравнение номеров помещений: "5" < "10", "А-12" < "А-100"
 const naturalCompare = (a: string, b: string): number => {
@@ -94,6 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setLabelToggles,
   labelScale,
   setLabelScale,
+  areaCoefficient,
   openExportModal,
   exportPng,
   exportZones
@@ -458,8 +463,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       title="Площадь зоны, м²"
                     />
                     <span className="zone-area-unit">м²</span>
-                    <span className="zone-auto-area" title="Площадь в пикселях плана (без масштаба)">
-                      ≈{formatArea(pxArea)}
+                    <span className="zone-auto-area" title={`Примерная площадь: площадь полигона в px² × коэффициент² (${areaCoefficient}). Коэффициент задаётся в верхней панели.`}>
+                      ≈{estimateAreaM2(pxArea, areaCoefficient)}
                     </span>
                   </div>
                 </div>

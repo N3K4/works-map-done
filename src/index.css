@@ -1167,6 +1167,38 @@ canvas {
   color: #fff;
 }
 
+/* Area coefficient input in the header */
+.area-coefficient {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(55, 65, 81, 0.6);
+  border-radius: 6px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.area-coefficient-label {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.area-coefficient input {
+  width: 74px;
+  background: rgba(17, 24, 39, 0.8);
+  border: 1px solid rgba(75, 85, 99, 0.6);
+  border-radius: 4px;
+  color: #e5e7eb;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+
+.area-coefficient input:focus {
+  outline: none;
+  border-color: rgba(96, 165, 250, 0.7);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
 /* Category select for a zone */
 .zone-category-select {
   writing-mode: vertical-rl;
