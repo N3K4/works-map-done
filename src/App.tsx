@@ -20,6 +20,8 @@ function App() {
   const [labelToggles, setLabelToggles] = useState<LabelToggles>({ name: true, area: true, category: true });
   /** Множитель размера названий и площадей (настраивается в меню экспорта) */
   const [labelScale, setLabelScale] = useState(1);
+  /** Коэффициент пересчёта площади пикселей плана в м² для примерных площадей зон */
+  const [areaCoefficient, setAreaCoefficient] = useState(0.01);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
@@ -336,6 +338,11 @@ function App() {
         });
       }
 
+      // Восстанавливаем коэффициент расчёта примерной площади
+      if (typeof (project as any).areaCoefficient === 'number' && (project as any).areaCoefficient >= 0) {
+        setAreaCoefficient((project as any).areaCoefficient);
+      }
+
       const loadedImages: ProjectImage[] = [];
 
       // Загружаем все изображения
@@ -450,13 +457,14 @@ function App() {
 
   const getProjectData = useCallback(() => {
     const project: ProjectFile = {
-      version: '1.4',
+      version: '1.5',
       exportedAt: new Date().toISOString(),
       activeImageId: activeImageId || '',
       categories,
       labelScale,
       showLabels,
       labelToggles,
+      areaCoefficient,
       images: images.map(img => ({
         id: img.id,
         name: img.name,
@@ -467,7 +475,7 @@ function App() {
       }))
     };
     return JSON.stringify(project, null, 2);
-  }, [images, activeImageId, categories, labelScale, showLabels, labelToggles]);
+  }, [images, activeImageId, categories, labelScale, showLabels, labelToggles, areaCoefficient]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -534,6 +542,8 @@ function App() {
         images={images}
         showLabels={showLabels}
         setShowLabels={setShowLabels}
+        areaCoefficient={areaCoefficient}
+        setAreaCoefficient={setAreaCoefficient}
       />
 
       <div className="main-content">
@@ -572,6 +582,7 @@ function App() {
           setLabelToggles={setLabelToggles}
           labelScale={labelScale}
           setLabelScale={setLabelScale}
+          areaCoefficient={areaCoefficient}
           openExportModal={openExportModal}
           exportPng={exportPng}
           exportZones={exportZones}
