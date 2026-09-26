@@ -59,4 +59,6 @@ export interface Category {
   id: string;
   name: string;
   color: string;
+  /** Скрыта ли категория (её зоны не заливаются на плане) */
+  hidden?: boolean;
 }
