@@ -209,7 +209,9 @@ button:disabled {
   overflow: hidden;
 }
 
-/* Sidebar */
+/* Sidebar: три секции — Изображения ~20%, Категории ~25%, Области ~55%.
+   Каждая секция занимает фиксированную долю высоты и скроллится внутри себя,
+   поэтому ни одна секция не перекрывает соседние. */
 aside {
   width: 256px;
   background: rgba(31, 41, 55, 0.95);
@@ -227,9 +229,34 @@ aside {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
+}
+
+.section-images {
+  flex: 20 1 0;
+}
+
+.section-categories {
+  flex: 25 1 0;
+}
+
+.section-zones {
+  flex: 55 1 0;
+  border-bottom: none;
+}
+
+.section-export,
+.instructions {
+  flex-shrink: 0;
+}
+
+.instructions {
+  overflow-y: auto;
+  max-height: 30%;
 }
 
 .sidebar-title {
+  flex-shrink: 0;
   font-size: 10px;
   font-weight: bold;
   color: #6b7280;
@@ -252,10 +279,14 @@ aside {
   color: #93c5fd;
 }
 
-/* Image List */
+/* Image List — скролл внутри своей секции */
 .image-list {
-  max-height: 208px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 transparent;
 }
 
 .image-item {
@@ -360,14 +391,14 @@ aside {
   color: #f87171;
 }
 
-/* Category List — скроллится, если категорий много,
+/* Category List — скроллится внутри своей секции,
    чтобы не перекрывать секцию областей */
 .category-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 30vh;
-  min-height: 40px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -439,11 +470,14 @@ aside {
   text-align: center;
 }
 
-/* Zones List */
+/* Zones List — скролл внутри своей секции */
 .zones-list {
   flex: 1 1 auto;
-  min-height: 120px;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 transparent;
   padding: 12px;
 }
 

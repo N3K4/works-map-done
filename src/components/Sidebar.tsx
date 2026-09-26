@@ -141,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside>
       {/* Секция: Изображения */}
-      <div className="sidebar-section">
+      <div className="sidebar-section section-images">
         <div className="sidebar-title">
           <span>Изображения ({images.length})</span>
           <button onClick={() => fileInputRef.current?.click()}>+ Добавить</button>
@@ -197,7 +197,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Секция: Категории (создаются пользователем) */}
-      <div className="sidebar-section">
+      <div className="sidebar-section section-categories">
         <div className="sidebar-title">
           <span>Категории ({categories.length})</span>
           <button onClick={() => setShowCatForm(v => !v)}>
@@ -294,7 +294,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Секция: Области */}
-      <div className="zones-list">
+      <div className="sidebar-section zones-list section-zones">
         <div className="sidebar-title">
           <span>Области ({rawZones.length})</span>
           <div className="label-settings" ref={labelSettingsRef}>
@@ -448,8 +448,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
 
-      {/* Секция: Экспорт и подписи */}
-      <div className="sidebar-section">
+      {/* Секция: Экспорт и подписи (фиксированная, внизу) */}
+      <div className="sidebar-section section-export">
         <div className="sidebar-title">
           <span>Экспорт и подписи</span>
         </div>
