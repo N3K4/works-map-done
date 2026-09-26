@@ -389,6 +389,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 key={zone.id}
                 className={`zone-item ${selectedZone === zone.id ? 'selected' : ''}`}
                 onClick={() => { setSelectedZone(zone.id); setMode('select'); }}
+                title="Клик — выбрать зону и перенести вид к ней"
               >
                 <div className="zone-color" style={{ backgroundColor: cat?.color }}></div>
                 <select

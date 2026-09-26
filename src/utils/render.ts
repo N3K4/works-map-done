@@ -14,6 +14,8 @@ export interface RenderZonesOptions {
   /** Какие данные показывать в подписях зон */
   labelToggles?: LabelToggles;
   selectedZone?: string | null;
+  /** Метка времени (ms) последнего выбора зоны — рисует пульсирующую подсветку ~0.8 с */
+  selectionTime?: number;
   /**
    * Текущий зум экрана. Если задан (>0), толщины линий и размер подписей
    * делятся на него, чтобы визуально оставаться постоянными в экранных
@@ -31,6 +33,17 @@ export function drawZones(
   const { labelScale, showLabels, selectedZone } = opts;
   const toggles = opts.labelToggles ?? DEFAULT_LABEL_TOGGLES;
   const k = opts.zoom && opts.zoom > 0 ? 1 / opts.zoom : 1; // экранные px -> px плана
+
+  // Пульсирующая подсветка свежевыбранной зоны (для «переноса вида» из списка)
+  let flashAlpha = 0;
+  if (opts.selectionTime) {
+    const age = performance.now() - opts.selectionTime;
+    if (age < 800) {
+      flashAlpha = Math.max(0, 0.45 * (1 - age / 800));
+    } else {
+      flashAlpha = 0.12 + 0.08 * Math.sin(age / 90); // лёгкая пульсация выбранной зоны
+    }
+  }
 
   zones.forEach(zone => {
     if (!zone.points || zone.points.length < 3) return;
@@ -56,6 +69,14 @@ export function drawZones(
     ctx.strokeStyle = color;
     ctx.lineWidth = (isSelected ? 3.5 : 2.5) * k;
     ctx.stroke();
+    // Пульсация свежевыбранной зоны (белая подсветка поверх границ)
+    if (isSelected && flashAlpha > 0) {
+      ctx.strokeStyle = `rgba(255,255,255,${flashAlpha.toFixed(3)})`;
+      ctx.lineWidth = (isSelected ? 9 : 7) * k;
+      ctx.stroke();
+      ctx.fillStyle = `rgba(255,255,255,${(flashAlpha * 0.5).toFixed(3)})`;
+      ctx.fill();
+    }
 
     if (showLabels) {
       const cx = zone.points.reduce((s, p) => s + p.x, 0) / zone.points.length;
