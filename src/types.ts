@@ -55,6 +55,8 @@ export interface LabelToggles {
   area: boolean;
   /** Название категории */
   category: boolean;
+  /** Номер категории в красном треугольнике над зоной */
+  catNumber: boolean;
 }
 
 export interface Category {

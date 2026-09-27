@@ -106,8 +106,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Выпадашка настроек подписей зон
   const [labelSettingsOpen, setLabelSettingsOpen] = useState(false);
   const labelSettingsRef = useRef<HTMLDivElement>(null);
-  const allTogglesOn = labelToggles.name && labelToggles.area && labelToggles.category;
-  const activeToggleCount = [labelToggles.name, labelToggles.area, labelToggles.category].filter(Boolean).length;
+  const allTogglesOn = labelToggles.name && labelToggles.area && labelToggles.category && labelToggles.catNumber;
+  const activeToggleCount = [labelToggles.name, labelToggles.area, labelToggles.category, labelToggles.catNumber].filter(Boolean).length;
 
   useEffect(() => {
     if (!labelSettingsOpen) return;
@@ -292,13 +292,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={(e) => { e.stopPropagation(); setEditingColorId(cat.id); }}
                 ></div>
               )}
-              <input
-                className="category-name-input"
-                value={cat.name}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => renameCategory(cat.id, e.target.value)}
-                title="Название категории"
-              />
+              <div className="category-name-wrap">
+                {/* Номер категории в списке (в скобках) — совпадает с номером в красном треугольнике на плане */}
+                <span className="category-number">({index + 1})</span>
+                <input
+                  className="category-name-input"
+                  value={cat.name}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => renameCategory(cat.id, e.target.value)}
+                  title="Название категории"
+                />
+              </div>
               <div className="category-shortcut">{index + 1 <= 9 ? index + 1 : ''}</div>
               <div className="category-count">
                 {activeImage ? activeImage.zones.filter((z: any) => z.category === cat.id).length : 0}
@@ -372,6 +376,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onChange={(e) => setLabelToggles({ ...labelToggles, category: e.target.checked })}
                   />
                   <span>Категория</span>
+                </label>
+                <label className="toggle-label" title="Номер категории в красном треугольнике над зоной (1 — вершина сверху, две снизу)">
+                  <input
+                    type="checkbox"
+                    checked={labelToggles.catNumber}
+                    onChange={(e) => setLabelToggles({ ...labelToggles, catNumber: e.target.checked })}
+                  />
+                  <span>№ категории в ▲</span>
                 </label>
                 <div className="label-settings-hint">Эти же настройки влияют на PNG-экспорт</div>
               </div>

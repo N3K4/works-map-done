@@ -162,6 +162,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 />
                 <span>Категория</span>
               </label>
+              <label className="toggle-label" title="Показывать номер категории в красном треугольнике над зоной">
+                <input
+                  type="checkbox"
+                  checked={labelToggles.catNumber}
+                  onChange={(e) => setLabelToggles({ ...labelToggles, catNumber: e.target.checked })}
+                />
+                <span>№ в ▲</span>
+              </label>
             </div>
           </div>
 

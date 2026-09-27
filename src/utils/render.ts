@@ -5,7 +5,48 @@ import { hexToRgba } from './geometry';
 export const BASE_LABEL_FONT = 14;
 
 /** По умолчанию показываем всё: название, площадь и категорию */
-export const DEFAULT_LABEL_TOGGLES: LabelToggles = { name: true, area: true, category: true };
+export const DEFAULT_LABEL_TOGGLES: LabelToggles = { name: true, area: true, category: true, catNumber: true };
+
+/**
+ * Красный треугольник с номером категории (одна вершина сверху, две снизу).
+ * Рисуется над центром зоны; size — сторона квадрата, в который вписан треугольник.
+ */
+function drawCategoryTriangle(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cyTop: number,
+  size: number,
+  k: number,
+  number: number
+) {
+  ctx.beginPath();
+  ctx.moveTo(cx, cyTop); // верхняя вершина
+  ctx.lineTo(cx - size / 2, cyTop + size); // нижняя левая
+  ctx.lineTo(cx + size / 2, cyTop + size); // нижняя правая
+  ctx.closePath();
+  ctx.fillStyle = '#e02d2d';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+  ctx.lineWidth = Math.max(1.2 * k, size / 14);
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  // Номер категории белым — по центру треугольника
+  const fs = size * 0.62;
+  ctx.font = `bold ${fs}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'white';
+  ctx.fillText(String(number), cx, cyTop + size * 0.68);
+}
+
+/** Сколько строк текста будет в подписи зоны (для позиционирования треугольника) */
+function countTextLines(toggles: LabelToggles, zone: Zone, cat?: Category): number {
+  let n = 0;
+  if (toggles.name && zone.roomNumber) n++;
+  if (toggles.area && zone.area != null) n++;
+  if (toggles.category && cat?.name) n++;
+  return Math.max(n, 1);
+}
 
 export interface RenderZonesOptions {
   /** Множитель размера названий и площадей (настраивается в меню импорта/экспорта) */
@@ -92,13 +133,24 @@ export function drawZones(
     if (showLabels && !hidden) {
       const cx = zone.points.reduce((s, p) => s + p.x, 0) / zone.points.length;
       const cy = zone.points.reduce((s, p) => s + p.y, 0) / zone.points.length;
+      const fontSize = BASE_LABEL_FONT * labelScale * k;
+      // Красный треугольник с номером категории над центром зоны
+      if (toggles.catNumber) {
+        const catIndex = categories.findIndex(c => c.id === zone.category);
+        if (catIndex >= 0) {
+          const triSize = fontSize * 1.5;
+          const lineHeight0 = fontSize * 1.3;
+          const textLines0 = countTextLines(toggles, zone, cat);
+          const blockTop = cy - ((textLines0 - 1) * lineHeight0) / 2;
+          drawCategoryTriangle(ctx, cx, blockTop - triSize - 4 * k, triSize, k, catIndex + 1);
+        }
+      }
       // Состав подписи настраивается: название / площадь / категория
       const lines: string[] = [];
       if (toggles.name && zone.roomNumber) lines.push(zone.roomNumber);
       if (toggles.area && zone.area != null) lines.push(`${zone.area} м²`);
       if (toggles.category && cat?.name) lines.push(cat.name);
       if (lines.length > 0) {
-        const fontSize = BASE_LABEL_FONT * labelScale * k;
         ctx.font = `${fontSize}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
