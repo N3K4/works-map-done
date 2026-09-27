@@ -17,7 +17,7 @@ function App() {
   const [activeCategory, setActiveCategory] = useState(categories[0].id);
   const [showLabels, setShowLabels] = useState(true);
   /** Что показывать в подписях зон: название / площадь / категорию */
-  const [labelToggles, setLabelToggles] = useState<LabelToggles>({ name: true, area: true, category: true });
+  const [labelToggles, setLabelToggles] = useState<LabelToggles>({ name: true, area: true, category: true, catNumber: true });
   /** Множитель размера названий и площадей (настраивается в меню экспорта) */
   const [labelScale, setLabelScale] = useState(1);
   /** Коэффициент пересчёта площади пикселей плана в м² для примерных площадей зон */
@@ -335,6 +335,7 @@ function App() {
           name: typeof lt.name === 'boolean' ? lt.name : true,
           area: typeof lt.area === 'boolean' ? lt.area : true,
           category: typeof lt.category === 'boolean' ? lt.category : true,
+          catNumber: typeof lt.catNumber === 'boolean' ? lt.catNumber : true,
         });
       }
 

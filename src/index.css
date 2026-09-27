@@ -1513,3 +1513,23 @@ canvas {
   gap: 12px;
   margin-top: 6px;
 }
+
+/* Номер категории в списке (в скобках) + название */
+.category-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.category-number {
+  font-size: 11px;
+  font-weight: 700;
+  color: #f87171;
+  flex-shrink: 0;
+}
+
+.category-item.hidden-cat .category-number {
+  color: #6b7280;
+}
